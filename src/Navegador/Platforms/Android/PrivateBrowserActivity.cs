@@ -205,7 +205,7 @@ public sealed class PrivateBrowserActivity : Activity
         browser?.StopLoading();
         browser?.ClearHistory();
         browser?.ClearCache(true);
-        Android.Webkit.WebViewDatabase.GetInstance(this).ClearFormData();
+        global::Android.Webkit.WebViewDatabase.GetInstance(this).ClearFormData();
         WebStorage.Instance.DeleteAllData();
 
         var cookies = CookieManager.Instance;
