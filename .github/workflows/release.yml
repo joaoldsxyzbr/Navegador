@@ -123,7 +123,7 @@ jobs:
         run: |
           Compress-Archive -Path "artifacts/package/*" -DestinationPath "artifacts/Navegador-windows-x64.zip" -CompressionLevel Optimal
           $hash = (Get-FileHash "artifacts/Navegador-windows-x64.zip" -Algorithm SHA256).Hash.ToLowerInvariant()
-          $assetUrl = "https://github.com/\${{ github.repository }}/releases/download/v$env:PRODUCT_VERSION/Navegador-windows-x64.zip"
+          $assetUrl = "https://github.com/${{ github.repository }}/releases/download/v$env:PRODUCT_VERSION/Navegador-windows-x64.zip"
           $manifest = [ordered]@{
             schema = 1
             version = $env:PRODUCT_VERSION
@@ -152,7 +152,7 @@ jobs:
       - name: Armazenar artefatos
         uses: actions/upload-artifact@v4
         with:
-          name: Navegador-v\${{ env.PRODUCT_VERSION }}-windows-x64
+          name: Navegador-v${{ env.PRODUCT_VERSION }}-windows-x64
           path: |
             artifacts/Navegador-windows-x64.zip
             artifacts/Navegador-windows-x64.zip.sha256
@@ -177,13 +177,13 @@ jobs:
       - name: Baixar artefatos
         uses: actions/download-artifact@v4
         with:
-          name: Navegador-v\${{ steps.version.outputs.version }}-windows-x64
+          name: Navegador-v${{ steps.version.outputs.version }}-windows-x64
           path: release-assets
 
       - name: Criar release
         env:
-          GH_TOKEN: \${{ github.token }}
-          VERSION: \${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
           tag="v$VERSION"
