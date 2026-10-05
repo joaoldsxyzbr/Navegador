@@ -65,7 +65,7 @@ internal static class PrivateBrowsingIntegration
                 FileSystem.Current.AppDataDirectory,
                 "WebView2");
 
-            var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
+            var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder, null);
 
             var options = environment.CreateCoreWebView2ControllerOptions();
             options.ProfileName = "NavegadorPrivate";
