@@ -171,6 +171,7 @@ jobs:
 
       - name: Criar ou atualizar release
         env:
+          GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
