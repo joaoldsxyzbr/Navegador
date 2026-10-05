@@ -36,41 +36,25 @@ O Chromium suporta sobrescrever o diretório de dados do usuário por `--user-da
 
 Dados protegidos pelas APIs criptográficas do sistema operacional podem ficar vinculados ao usuário ou computador Windows. Portanto, mover a pasta não garante que sessões, cookies, senhas ou outros segredos protegidos pelo SO funcionem em outro computador.
 
-A sincronização entre dispositivos é o mecanismo oficial para transportar dados suportados entre Windows e Android.
+O Navegador não tentará contornar essas proteções do sistema operacional.
 
-## Sincronização Windows ↔ Android
+## Sincronização
 
-O Navegador terá sincronização própria e não dependerá de Chrome Sync/Google Sync.
+Sincronização entre Windows e Android fica **fora do escopo atual**.
 
-### Primeira versão
+Nesta fase:
 
-Sincronizar:
+- não haverá conta do Navegador;
+- não haverá backend de sincronização;
+- não haverá sincronização de favoritos, abas, histórico ou configurações;
+- não haverá sincronização própria de senhas, passkeys ou autofill;
+- não haverá dependência de Chrome Sync/Google Sync.
 
-- favoritos;
-- abas abertas;
-- histórico;
-- configurações selecionadas.
-
-### Dados sensíveis
-
-Senhas, passkeys, autofill e outros segredos entram somente depois de existir um desenho de criptografia ponta a ponta revisado e testado.
-
-### Requisitos de arquitetura
-
-- backend controlado pelo projeto;
-- cliente Windows e Android usando o mesmo protocolo;
-- identificação de dispositivo;
-- resolução explícita de conflitos;
-- transporte via HTTPS;
-- dados sensíveis nunca devem ser armazenados em texto puro no servidor;
-- preferir criptografia ponta a ponta para o conteúdo sincronizado;
-- o backend e o protocolo também devem ser versionados e documentados neste repositório.
-
-A escolha da infraestrutura do backend será feita separadamente antes da implementação.
+Esse recurso poderá ser reavaliado no futuro como uma iniciativa separada.
 
 ## Android
 
-No Android, “portátil” não significa executar sem instalação. O app será instalado normalmente pelo sistema e participará da mesma sincronização do Windows.
+No Android, “portátil” não significa executar sem instalação. O app será instalado normalmente pelo sistema.
 
 ## Prioridades
 
@@ -78,5 +62,6 @@ No Android, “portátil” não significa executar sem instalação. O app ser�
 2. Tema escuro padrão.
 3. Empacotamento portátil Windows.
 4. Identidade mínima do Navegador.
-5. Base da sincronização.
-6. Cliente Android e sincronização entre plataformas.
+5. Funções próprias mantendo a interface Chromium.
+6. Atualização do Chromium.
+7. Android.
