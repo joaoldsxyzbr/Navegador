@@ -10,6 +10,11 @@ on:
         description: "Tag da versão já criada no repositório"
         required: true
         type: string
+      include_android:
+        description: "Gerar também o APK assinado (exige os segredos Android)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -67,6 +72,7 @@ jobs:
 
   build-android:
     name: Empacotar Android assinado
+    if: github.event_name == 'workflow_dispatch' && inputs.include_android
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
@@ -150,15 +156,28 @@ jobs:
     needs:
       - build-windows
       - build-android
+    if: always() && needs.build-windows.result == 'success' && (needs.build-android.result == 'success' || needs.build-android.result == 'skipped')
     steps:
       - name: Baixar artefatos
         uses: actions/download-artifact@v4
         with:
           path: release-assets
 
-      - name: Criar release com os pacotes
+      - name: Criar ou atualizar release
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          gh release create "$RELEASE_TAG" release-assets/Navegador-windows-x64/Navegador-windows-x64.zip release-assets/Navegador-android/Navegador-android.apk --generate-notes --verify-tag
+          windows_zip="release-assets/Navegador-windows-x64/Navegador-windows-x64.zip"
+          android_apk="release-assets/Navegador-android/Navegador-android.apk"
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$windows_zip" --clobber
+            if [[ -f "$android_apk" ]]; then
+              gh release upload "$RELEASE_TAG" "$android_apk" --clobber
+            fi
+          elif [[ -f "$android_apk" ]]; then
+            gh release create "$RELEASE_TAG" "$windows_zip" "$android_apk" --generate-notes --verify-tag
+          else
+            gh release create "$RELEASE_TAG" "$windows_zip" --generate-notes --verify-tag
+          fi

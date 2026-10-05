@@ -16,9 +16,11 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 - [x] Criar configurações e consulta de atualização por release do projeto.
 - [x] Preparar fluxo de publicação de ZIP portátil e APK assinado.
 - [x] Corrigir as falhas de build e obter CI final verde para Windows e Android.
+- [ ] Publicar a primeira release pública de teste para Windows.
+- [ ] Validar instalação e atualização no Windows.
 - [ ] Cadastrar a chave Android nos segredos do GitHub Actions.
-- [ ] Publicar a primeira release pública assinada.
-- [ ] Validar instalação e atualização nos dispositivos Windows e Android.
+- [ ] Publicar a primeira release com APK Android assinado.
+- [ ] Validar instalação e atualização no Android.
 
 ## Escopo do primeiro MVP
 
