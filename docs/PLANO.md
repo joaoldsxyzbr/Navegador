@@ -21,7 +21,7 @@ Transformar o Navegador em uma distribuição Chromium própria, leve de manter,
 - [x] Validar compilação do launcher e do atualizador no CI.
 - [x] Definir que a UI upstream do Chromium será preservada.
 - [x] Adiar sincronização entre dispositivos para fora do escopo atual.
-- [ ] Identificar e preparar ambiente Windows autorizado para o build integral (acompanhar em [#3](https://github.com/joaoldsxyzbr/Navegador/issues/3)).
+- [ ] Identificar e preparar ambiente Windows autorizado para o build integral (acompanhar em [#8](https://github.com/joaoldsxyzbr/Navegador/issues/8)).
 - [ ] Executar o primeiro checkout completo do Chromium nesse ambiente.
 - [ ] Compilar o target `chrome` sem patches.
 - [ ] Registrar espaço, RAM, duração e eventuais limites observados.
