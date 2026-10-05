@@ -2,25 +2,53 @@
 
 ## Decisão principal
 
-O Navegador passa a ser uma distribuição própria baseada em **Chromium upstream + overlay versionado**.
+O Navegador é uma distribuição própria baseada em **Chromium upstream + overlay versionado**.
 
 A antiga aplicação .NET MAUI/WebView foi removida da `main`. O projeto não usa mais WebView2 como fundação do produto.
 
 ## Objetivo arquitetural
 
-Ter um navegador Chromium próprio sem manter um fork profundo do motor.
+Ter um navegador Chromium próprio sem manter um fork profundo do motor e **sem criar uma interface paralela ao Chromium**.
 
 ```text
 Chromium upstream limpo
         +
 configuração
         +
-patches pequenos
+patches funcionais pequenos
         +
-branding
+branding mínimo
         ↓
 Navegador
 ```
+
+## Regra de interface
+
+A UI do Chromium é a base visual oficial do Navegador.
+
+Por padrão, não serão redesenhados:
+
+- barra de abas;
+- omnibox/barra de endereço;
+- barra de ferramentas;
+- menus;
+- página de downloads;
+- histórico;
+- favoritos;
+- configurações;
+- DevTools;
+- demais superfícies já fornecidas pelo Chromium.
+
+Novas funções devem, sempre que possível, ser integradas usando componentes, comandos, menus, páginas e padrões já existentes no Chromium.
+
+Uma alteração visual só é aceitável quando:
+
+1. for necessária para expor uma função nova;
+2. reutilizar o design system e componentes do Chromium;
+3. permanecer pequena e isolada;
+4. não exigir manter um fork visual independente.
+
+Trocar nome, ícone, identificadores do produto e diretórios próprios é considerado **branding mínimo**, não redesign.
 
 ## Fonte de verdade
 
@@ -46,12 +74,13 @@ Regras:
 
 - um objetivo por patch;
 - nomes numerados;
+- priorizar recursos e comportamento, não customização visual;
 - evitar refatorações upstream desnecessárias;
 - patch que não reaplica bloqueia a atualização até ser corrigido ou removido.
 
 ### chromium/branding
 
-Fontes da identidade do Navegador. A integração desses recursos ao Chromium deve acontecer por patches pequenos.
+Somente identidade essencial do Navegador, como nome, ícones e identificadores. Não é uma camada de interface própria.
 
 ### chromium/scripts
 
@@ -61,7 +90,7 @@ Automação de preparação, validação e build. Os scripts devem operar sobre 
 
 ### Windows
 
-É a primeira plataforma da nova arquitetura. O objetivo inicial é produzir um executável Chromium funcional, depois substituir identidade, defaults e recursos gradualmente.
+É a primeira plataforma da nova arquitetura. O objetivo inicial é produzir um executável Chromium funcional e depois adicionar branding mínimo, defaults e recursos próprios sem alterar a experiência visual base.
 
 ### Android
 
@@ -71,13 +100,14 @@ Continua no escopo do produto, mas só entra depois que a receita Chromium para 
 
 Ordem de preferência:
 
-1. argumento GN ou configuração suportada;
-2. preferência/default do Chromium;
-3. recurso/branding;
-4. patch pequeno;
-5. alteração maior somente quando houver benefício claro.
+1. recurso já existente no Chromium;
+2. preferência/default suportado;
+3. argumento GN ou configuração;
+4. extensão funcional pequena usando componentes nativos;
+5. patch funcional isolado;
+6. alteração maior somente quando houver benefício claro.
 
-A regra é manter o delta para o upstream pequeno.
+A regra é manter o delta para o upstream pequeno e evitar um fork de UI.
 
 ## Atualização do Chromium
 
