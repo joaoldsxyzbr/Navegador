@@ -4,10 +4,10 @@
 
 O aplicativo consulta a API pública de releases de joaoldsxyzbr/Navegador. O repositório e os releases precisam estar públicos para que o navegador consulte versões sem token pessoal.
 
-Cada release usa uma tag semântica, como v0.1.1, e contém os arquivos:
+Cada release usa uma tag semântica, como v0.1.1, e contém sempre o pacote Windows:
 
 - Navegador-windows-x64.zip
-- Navegador-android.apk
+- Navegador-android.apk (opcional; só é gerado quando solicitado manualmente com os segredos Android configurados)
 
 O aplicativo escolhe o pacote da plataforma, exibe as notas e só inicia o download após confirmação.
 
@@ -29,13 +29,13 @@ Cadastre os segredos em Settings → Secrets and variables → Actions:
 - ANDROID_KEY_ALIAS: alias da chave.
 - ANDROID_KEY_PASSWORD: senha da chave.
 
-O fluxo de release exige esses segredos e falha sem publicar um APK não assinado.
+Esses segredos só são exigidos ao solicitar a geração do APK. A publicação do ZIP Windows não depende da assinatura Android.
 
 ## Criar uma release
 
 1. Atualize ApplicationDisplayVersion e ApplicationVersion em src/Navegador/Navegador.csproj.
-2. Envie uma tag vMAJOR.MINOR.PATCH para um commit aprovado na main.
-3. O GitHub Actions publica um ZIP portátil do Windows e um APK Android assinado.
-4. Instale os dois pacotes e confira a atualização antes de distribuir a versão.
+2. Envie uma tag vMAJOR.MINOR.PATCH para um commit aprovado na main; o GitHub Actions publica o ZIP portátil Windows.
+3. Para o APK, execute manualmente o workflow Release na mesma tag e marque include_android; isso exige os quatro segredos Android.
+4. Instale e teste cada pacote antes de distribuir a versão.
 
 A visibilidade pública do repositório e a configuração inicial dos segredos são etapas operacionais do proprietário.
