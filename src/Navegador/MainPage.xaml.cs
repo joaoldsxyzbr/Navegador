@@ -159,12 +159,10 @@ public partial class MainPage : ContentPage
             Text = "×",
             FontSize = 14,
             Padding = new Thickness(8, 6),
-            WidthRequest = 40,
-            SemanticProperties =
-            {
-                Description = "Fechar aba"
-            }
+            WidthRequest = 40
         };
+
+        SemanticProperties.SetDescription(closeButton, "Fechar aba");
 
         var tabView = new HorizontalStackLayout
         {
