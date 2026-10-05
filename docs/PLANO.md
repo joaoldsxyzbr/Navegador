@@ -24,8 +24,12 @@ Transformar o Navegador em uma distribuição Chromium própria, leve de manter,
 - [ ] Garantir que o binário use identidade própria sem redesenhar a UI.
 - [ ] Definir página inicial e mecanismo de pesquisa padrão.
 
-## Fase 3 — Funções do Navegador
+## Fase 3 — Base do produto
 
+- [ ] Tornar o tema escuro o padrão, preservando Claro/Escuro/Sistema.
+- [ ] Criar launcher/empacotamento portátil Windows.
+- [ ] Manter o perfil em `Data/` junto do pacote portátil.
+- [ ] Validar execução sem instalador e sem privilégios administrativos.
 - [ ] Definir a primeira função adicional.
 - [ ] Integrar novos recursos usando componentes nativos do Chromium.
 - [ ] Evitar alterações na disposição visual de abas, omnibox, menus e configurações.
@@ -35,20 +39,33 @@ Transformar o Navegador em uma distribuição Chromium própria, leve de manter,
 - [ ] Validar abas, downloads, histórico, favoritos, perfis e modo privado.
 - [ ] Criar empacotamento Windows x64.
 
-## Fase 4 — Atualização upstream
+## Fase 4 — Sincronização
+
+- [ ] Definir protocolo de sincronização próprio.
+- [ ] Escolher infraestrutura do backend.
+- [ ] Implementar identidade de dispositivo e resolução de conflitos.
+- [ ] Sincronizar favoritos.
+- [ ] Sincronizar abas abertas.
+- [ ] Sincronizar histórico.
+- [ ] Sincronizar configurações selecionadas.
+- [ ] Projetar criptografia ponta a ponta antes de sincronizar senhas, passkeys ou autofill.
+
+## Fase 5 — Atualização upstream
 
 - [ ] Automatizar teste de reaplicação dos patches.
 - [ ] Criar rotina de atualização da versão Chromium.
 - [ ] Adicionar relatório de patches quebrados.
 - [ ] Definir cadência para atualizações de segurança.
 
-## Fase 5 — Android
+## Fase 6 — Android
 
 - [ ] Definir estratégia de build Chromium Android.
 - [ ] Portar branding, defaults e funções compartilháveis.
 - [ ] Preservar a interface Chromium/Android sempre que aplicável.
 - [ ] Criar empacotamento APK/AAB.
 - [ ] Validar recursos móveis e atualização.
+- [ ] Integrar o cliente Android ao protocolo de sincronização.
+- [ ] Validar sincronização bidirecional Windows ↔ Android.
 
 ## Critérios de aceite da fundação
 
