@@ -10,3 +10,11 @@ obj/
 artifacts/
 .DS_Store
 Thumbs.db
+
+# Chromium: o checkout e os artefatos ficam fora do repositório
+.chromium-work/
+chromium-src/
+depot_tools/
+out/
+*.orig
+*.rej

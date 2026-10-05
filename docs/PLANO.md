@@ -2,56 +2,54 @@
 
 ## Objetivo
 
-Entregar um navegador leve para Windows e Android, com uma base compartilhada e comportamento nativo por plataforma.
+Transformar o Navegador em uma distribuição Chromium própria, leve de manter e com delta mínimo em relação ao upstream.
 
-## Checkpoints
+## Fase 1 — Fundação do overlay
 
-- [x] Definir stack e arquitetura inicial.
-- [x] Criar repositório e documentação base.
-- [x] Criar o esqueleto funcional com navegação web.
-- [x] Validar builds Windows e Android no GitHub Actions.
-- [x] Implementar abas, favoritos e histórico local.
-- [x] Implementar downloads nativos.
-- [x] Implementar modo privado isolado.
-- [x] Criar configurações e consulta de atualização por release do projeto.
-- [x] Preparar fluxo de publicação de ZIP portátil e APK assinado.
-- [x] Corrigir as falhas de build e obter CI final verde para Windows e Android.
-- [ ] Publicar a primeira release pública de teste para Windows.
-- [ ] Validar instalação e atualização no Windows.
-- [ ] Cadastrar a chave Android nos segredos do GitHub Actions.
-- [ ] Publicar a primeira release com APK Android assinado.
-- [ ] Validar instalação e atualização no Android.
+- [x] Escolher Chromium + overlay como arquitetura principal.
+- [x] Remover a aplicação MAUI/WebView da `main`.
+- [x] Fixar uma versão Chromium.
+- [x] Criar estrutura de args, patches, branding e scripts.
+- [x] Criar validação leve do overlay no CI.
+- [ ] Executar o primeiro checkout completo do Chromium em ambiente de build.
+- [ ] Compilar o target `chrome` sem patches.
+- [ ] Registrar tamanho, duração e requisitos reais do primeiro build.
 
-## Escopo do primeiro MVP
+## Fase 2 — Identidade do Navegador
 
-1. Abrir URL ou pesquisar texto digitado.
-2. Voltar e avançar.
-3. Atualizar página.
-4. Voltar à página inicial.
-5. Sincronizar a barra de endereço com a página atual.
-6. Rodar em Windows e Android a partir da mesma base.
-7. Manter abas, favoritos e histórico local.
-8. Baixar arquivos com integração nativa de cada plataforma.
-9. Oferecer modo privado com isolamento real.
-10. Consultar, validar e aplicar atualizações pelas configurações.
+- [ ] Criar patch de nome do produto.
+- [ ] Integrar ícones do Navegador.
+- [ ] Ajustar identificadores e diretórios de perfil.
+- [ ] Definir página inicial e mecanismo de pesquisa padrão.
+- [ ] Garantir que o binário não use identidade do Google Chrome.
 
-## Fora do primeiro MVP
+## Fase 3 — Produto mínimo
 
-- Sincronização em nuvem.
-- Extensões.
-- Conta de usuário.
-- Motor próprio.
-- iOS.
+- [ ] Revisar recursos Chromium que ficam habilitados.
+- [ ] Definir defaults de privacidade e telemetria.
+- [ ] Definir política de atualizações.
+- [ ] Validar abas, downloads, histórico, favoritos, perfis e modo privado.
+- [ ] Criar empacotamento Windows x64.
 
-## Critérios de aceite
+## Fase 4 — Atualização upstream
 
-- Compilar para Windows e Android.
-- Navegar em páginas HTTPS e pesquisar texto que não seja URL.
-- Navegação privada não compartilhar cookies, cache ou armazenamento web com a sessão normal.
-- Atualizador consultar apenas releases do Navegador.
-- Pacote ser confirmado pelo usuário e validado por SHA-256 antes da instalação.
-- Android manter a mesma chave de assinatura entre versões.
+- [ ] Automatizar teste de reaplicação dos patches.
+- [ ] Criar rotina de atualização da versão Chromium.
+- [ ] Adicionar relatório de patches quebrados.
+- [ ] Definir cadência para atualizações de segurança.
 
-## Política de validação
+## Fase 5 — Android
 
-O CI completo roda no pull request para main ou por execução manual. Ajustes intermediários na preview devem ser agrupados antes desse CI.
+- [ ] Definir estratégia de build Chromium Android.
+- [ ] Portar branding e configurações compartilháveis.
+- [ ] Criar empacotamento APK/AAB.
+- [ ] Validar recursos móveis e atualização.
+
+## Critérios de aceite da fundação
+
+- `main` não contém a antiga implementação MAUI/WebView.
+- Chromium completo não está vendorizado no Git.
+- uma versão upstream exata está fixada;
+- patches possuem ordem explícita;
+- scripts conseguem preparar e construir uma árvore externa;
+- CI detecta estrutura quebrada antes do build pesado.
