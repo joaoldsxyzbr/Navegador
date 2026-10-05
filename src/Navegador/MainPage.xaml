@@ -5,47 +5,90 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Navegador">
 
-    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8" Padding="10">
-        <HorizontalStackLayout Grid.Row="0" Spacing="8">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8" Padding="10">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <ScrollView
+                Grid.Column="0"
+                Orientation="Horizontal"
+                HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout
+                    x:Name="TabsContainer"
+                    Spacing="6" />
+            </ScrollView>
+
+            <Button
+                Grid.Column="1"
+                Text="+"
+                Clicked="OnNewTabClicked"
+                SemanticProperties.Description="Nova aba" />
+        </Grid>
+
+        <Grid
+            Grid.Row="1"
+            ColumnDefinitions="Auto,Auto,Auto,*,Auto"
+            ColumnSpacing="8">
+
             <Button
                 x:Name="BackButton"
+                Grid.Column="0"
                 Text="‹"
                 Clicked="OnBackClicked"
                 IsEnabled="False"
                 SemanticProperties.Description="Voltar" />
+
             <Button
                 x:Name="ForwardButton"
+                Grid.Column="1"
                 Text="›"
                 Clicked="OnForwardClicked"
                 IsEnabled="False"
                 SemanticProperties.Description="Avançar" />
+
             <Button
+                Grid.Column="2"
                 Text="↻"
                 Clicked="OnReloadClicked"
                 SemanticProperties.Description="Atualizar" />
-            <Button
-                Text="⌂"
-                Clicked="OnHomeClicked"
-                SemanticProperties.Description="Página inicial" />
-        </HorizontalStackLayout>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <Entry
                 x:Name="AddressEntry"
-                Grid.Column="0"
+                Grid.Column="3"
                 Placeholder="Digite um endereço ou pesquise"
                 ReturnType="Go"
                 Completed="OnAddressCompleted"
                 ClearButtonVisibility="WhileEditing" />
+
             <Button
-                Grid.Column="1"
+                Grid.Column="4"
                 Text="Ir"
                 Clicked="OnGoClicked" />
         </Grid>
 
-        <WebView
-            x:Name="Browser"
+        <HorizontalStackLayout
             Grid.Row="2"
-            Navigated="OnBrowserNavigated" />
+            Spacing="8">
+
+            <Button
+                Text="Início"
+                Clicked="OnHomeClicked" />
+
+            <Button
+                x:Name="FavoriteButton"
+                Text="☆"
+                Clicked="OnFavoriteClicked"
+                SemanticProperties.Description="Adicionar ou remover favorito" />
+
+            <Button
+                Text="Favoritos"
+                Clicked="OnFavoritesClicked" />
+
+            <Button
+                Text="Histórico"
+                Clicked="OnHistoryClicked" />
+        </HorizontalStackLayout>
+
+        <Grid
+            x:Name="BrowserHost"
+            Grid.Row="3" />
     </Grid>
 </ContentPage>

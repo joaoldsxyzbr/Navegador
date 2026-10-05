@@ -31,13 +31,31 @@ Responsabilidades:
 
 - interface;
 - WebView;
+- abas e estado visual;
 - navegação;
+- favoritos e histórico local;
 - integração com Windows e Android.
+
+## Abas
+
+Cada aba possui sua própria instância de WebView. Apenas a aba ativa fica visível. Isso preserva a pilha de navegação nativa de cada aba e evita recriar manualmente o histórico de voltar/avançar.
+
+## Persistência local
+
+Favoritos e histórico são arquivos JSON armazenados em FileSystem.Current.AppDataDirectory.
+
+- favoritos.json
+- historico.json
+
+O histórico mantém no máximo 500 entradas.
+Os favoritos mantêm no máximo 200 entradas.
+
+No Windows, os dados do WebView2 ficam em uma subpasta WebView2 dentro do AppDataDirectory para evitar escrita no diretório de instalação.
 
 ## Regras
 
 - Código específico de plataforma só entra em Platforms/.
 - Regras reutilizáveis devem ficar em Navegador.Core.
 - Recursos novos devem evitar serviços em segundo plano sem necessidade.
-- Armazenamento futuro de histórico, favoritos e configurações deve ser local por padrão.
+- Armazenamento de histórico, favoritos e configurações é local por padrão.
 - Não adicionar telemetria sem decisão explícita.
