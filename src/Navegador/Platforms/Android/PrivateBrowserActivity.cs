@@ -57,8 +57,7 @@ public sealed class PrivateBrowserActivity : Activity
             AndroidWebView.SetDataDirectorySuffix("private");
 
         BuildInterface();
-        ClearPrivateData();
-        Navigate(AddressResolver.HomeUrl);
+        _ = StartPrivateSessionAsync();
     }
 
     private void BuildInterface()
@@ -182,16 +181,58 @@ public sealed class PrivateBrowserActivity : Activity
             _forwardButton.Enabled = _browser?.CanGoForward() == true;
     }
 
-    private void ClearPrivateData()
+    private async Task StartPrivateSessionAsync()
     {
-        _browser?.StopLoading();
-        _browser?.ClearHistory();
-        _browser?.ClearCache(true);
-        _browser?.ClearFormData();
+        try
+        {
+            await ClearPrivateDataAsync(_browser);
 
-        CookieManager.Instance.RemoveAllCookies(null);
-        CookieManager.Instance.Flush();
+            if (_browser is not null && !IsFinishing)
+                Navigate(AddressResolver.HomeUrl);
+        }
+        catch
+        {
+            AndroidToast.MakeText(
+                this,
+                "Não foi possível limpar os dados privados. A navegação não foi iniciada.",
+                AndroidToastLength.Long)?.Show();
+            Finish();
+        }
+    }
+
+    private async Task ClearPrivateDataAsync(AndroidWebView? browser)
+    {
+        browser?.StopLoading();
+        browser?.ClearHistory();
+        browser?.ClearCache(true);
+        Android.Webkit.WebViewDatabase.GetInstance(this).ClearFormData();
         WebStorage.Instance.DeleteAllData();
+
+        var cookies = CookieManager.Instance;
+        var completion = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        cookies.RemoveAllCookies(new CookieRemovalCallback(completion));
+        await completion.Task;
+        cookies.Flush();
+    }
+
+    private async Task ClearPrivateDataQuietlyAsync(AndroidWebView browser)
+    {
+        try
+        {
+            await ClearPrivateDataAsync(browser);
+        }
+        catch
+        {
+            // The next private session awaits a successful cleanup before it can navigate.
+        }
+    }
+
+    private sealed class CookieRemovalCallback(TaskCompletionSource<bool> completion)
+        : Java.Lang.Object, Android.Webkit.IValueCallback
+    {
+        public void OnReceiveValue(Java.Lang.Object? value) =>
+            completion.TrySetResult(true);
     }
 
     public override void OnBackPressed()
@@ -209,11 +250,12 @@ public sealed class PrivateBrowserActivity : Activity
     {
         if (_browser is not null)
         {
-            ClearPrivateData();
-            _browser.LoadUrl("about:blank");
-            _browser.RemoveAllViews();
-            _browser.Destroy();
+            var browser = _browser;
             _browser = null;
+            _ = ClearPrivateDataQuietlyAsync(browser);
+            browser.LoadUrl("about:blank");
+            browser.RemoveAllViews();
+            browser.Destroy();
         }
 
         base.OnDestroy();
