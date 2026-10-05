@@ -31,7 +31,7 @@ Opções a avaliar antes de iniciar o primeiro build:
 
 A menor configuração Windows publicada pelo GitHub para larger runners informa 150 GB de armazenamento. Isso não comprova que haverá 100 GB livres após a imagem do sistema; verificar o espaço disponível no início do job. Não configurar um runner faturável sem aprovação explícita do custo.
 
-A escolha e a preparação do ambiente estão acompanhadas na [issue #8](https://github.com/joaoldsxyzbr/Navegador/issues/3).
+A escolha e a preparação do ambiente estão acompanhadas na [issue #8](https://github.com/joaoldsxyzbr/Navegador/issues/8).
 
 ## Pré-requisitos no Windows
 
