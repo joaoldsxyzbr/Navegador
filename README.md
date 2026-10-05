@@ -10,10 +10,23 @@ O projeto segue um modelo de overlay inspirado em distribuições que mantêm o 
 - a versão base fica fixada em `chromium/VERSION`;
 - configurações de build ficam em `chromium/args/`;
 - alterações próprias entram como patches pequenos e numerados em `chromium/patches/`;
-- identidade visual e recursos próprios ficam em `chromium/branding/`;
+- branding mínimo e recursos próprios ficam em `chromium/branding/`;
 - scripts em `chromium/scripts/` preparam e compilam uma árvore Chromium externa.
 
 A fonte de verdade do Navegador é este repositório. O checkout completo do Chromium é apenas material de build e não deve ser commitado.
+
+## Direção do produto
+
+O Navegador **não pretende redesenhar a interface do Chromium**.
+
+A interface upstream deve ser preservada sempre que possível:
+
+- abas, barra de endereço, menus e páginas de configurações seguem o Chromium;
+- novos recursos devem usar padrões e componentes nativos do Chromium;
+- mudanças visuais só entram quando forem indispensáveis para uma função nova;
+- nome, ícone e identificadores próprios são branding, não um fork visual da interface.
+
+O diferencial do Navegador será principalmente **funcional**, por meio de novos recursos, configurações, integrações e defaults.
 
 ## Base atual
 
@@ -45,9 +58,9 @@ Chromium upstream
       +
 args de build
       +
-patches do Navegador
+patches funcionais do Navegador
       +
-branding
+branding mínimo
       ↓
 Navegador
 ```
@@ -64,10 +77,11 @@ Para preparar uma árvore externa do Chromium, instale `depot_tools` e siga `doc
 
 ## Princípios
 
-1. Alterar o mínimo possível no Chromium.
-2. Preferir configuração antes de patch.
-3. Preferir patch isolado antes de alteração ampla.
-4. Manter cada patch documentado e reaplicável.
-5. Atualizações de segurança do upstream têm prioridade.
-6. Não versionar o checkout nem artefatos de build do Chromium.
-7. GitHub é a fonte de verdade do projeto.
+1. Preservar a interface nativa do Chromium.
+2. Alterar o mínimo possível no upstream.
+3. Preferir configuração antes de patch.
+4. Preferir patch funcional isolado antes de alteração ampla.
+5. Manter cada patch documentado e reaplicável.
+6. Atualizações de segurança do upstream têm prioridade.
+7. Não versionar o checkout nem artefatos de build do Chromium.
+8. GitHub é a fonte de verdade do projeto.
