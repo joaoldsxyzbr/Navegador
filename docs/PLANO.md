@@ -15,7 +15,7 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 - [x] Implementar modo privado isolado.
 - [x] Criar configurações e consulta de atualização por release do projeto.
 - [x] Preparar fluxo de publicação de ZIP portátil e APK assinado.
-- [ ] Corrigir o build atual do Windows e obter CI final verde.
+- [x] Corrigir as falhas de build e obter CI final verde para Windows e Android.
 - [ ] Cadastrar a chave Android nos segredos do GitHub Actions.
 - [ ] Publicar a primeira release pública assinada.
 - [ ] Validar instalação e atualização nos dispositivos Windows e Android.
