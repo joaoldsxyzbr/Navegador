@@ -1,32 +1,49 @@
 # Navegador
 
-Navegador é um projeto de navegador baseado no Firefox, com a interface de desktop adaptada para manter a familiaridade visual do Chrome.
+Um navegador próprio para Windows, com visual inspirado no Chrome e motor WebView2 (Chromium/Edge).
 
-## Direção atual
+## Direção
 
-- Motor: Gecko, da família Firefox.
-- Desktop: personalizar a interface upstream do Firefox com HTML, CSS e JavaScript para aproximá-la da organização visual do Chrome.
-- Android: usar GeckoView como motor; a interface do app será um shell próprio e separado da interface desktop.
-- Distribuição Windows: portátil, com perfil local e atualizador próprio.
-- Sincronização Windows ↔ Android: fora do escopo atual.
+Vamos começar pelo PC. O app Windows usa C# e WinForms para a interface e WebView2 para carregar sites. O motor é fornecido pelo Microsoft Edge WebView2 Runtime; não compilamos Chromium nem Firefox.
 
-A interface Chrome-like é um requisito visual. O primeiro passo é criar um protótipo e validar abas, barra de endereço, toolbar e menus antes de assumir que a aproximação está pronta. Não pretendemos alterar o motor Gecko para reproduzir o visual.
+A linha Android fica para uma fase posterior, depois de validarmos o navegador Windows.
 
-## Build mais leve
+## Protótipo atual
 
-A documentação oficial do Firefox informa 40 GB livres e 4 GB de RAM como mínimo para build no Windows, com 8 GB ou mais recomendado. O Artifact Mode baixa componentes nativos já compilados e permite trabalhar na interface web do Firefox sem recompilar C++/Rust; mudanças no motor continuam fora desse modo.
+O primeiro protótipo inclui:
 
-- [Build do Firefox no Windows](https://firefox-source-docs.mozilla.org/setup/windows_build.html)
-- [Firefox Artifact Builds e limitações](https://firefox-source-docs.mozilla.org/contributing/build/artifact_builds.html)
-- [Arquitetura da interface Firefox](https://firefox-source-docs.mozilla.org/browser/overview.html)
-- [GeckoView para Android](https://firefox-source-docs.mozilla.org/mobile/android/geckoview/index.html)
+- abas;
+- voltar, avançar e recarregar;
+- barra de endereço com busca;
+- tema escuro na interface;
+- perfil persistente dentro de `Data/WebView2`.
 
-O runner padrão do GitHub não tem espaço suficiente para essa preparação. A etapa de protótipo deve rodar em máquina Windows que atenda ao espaço livre ou em runner maior disponível e autorizado.
+Ainda faltam favoritos, histórico visível, gerenciador de downloads, janela privada, configurações e atualizador integrado.
 
-## Versão histórica
+## Requisitos para desenvolver
 
-A release **v0.1.0** foi publicada com um snapshot Chromium e continuará sendo identificada como bootstrap histórico. Ela não é baseada em Firefox. A migração para Gecko terá pacote/canal próprio; o atualizador não deve substituir um perfil Chromium por Firefox nem prometer migração de dados entre motores.
+- Windows 10/11;
+- .NET 10 SDK;
+- Microsoft Edge WebView2 Runtime.
 
-## Plano
+O WebView2 Runtime é pré-instalado no Windows 11 e na maioria dos Windows 10 atualizados. O projeto detecta falha ao iniciar o motor e mostra o endereço oficial para instalar o Runtime.
 
-Veja [docs/PLANO.md](docs/PLANO.md), [docs/ARQUITETURA.md](docs/ARQUITETURA.md) e [docs/FIREFOX.md](docs/FIREFOX.md). O antigo build Chromium está documentado em [docs/CHROMIUM.md](docs/CHROMIUM.md) como histórico da v0.1.0.
+## Executar
+
+No PowerShell, na raiz do repositório:
+
+```powershell
+dotnet run --project desktop/Navegador.Windows/Navegador.Windows.csproj
+```
+
+O perfil será criado na pasta `Data/WebView2`, ao lado do executável. Para desenvolvimento, a pasta equivalente fica no diretório de saída do build.
+
+## Documentação
+
+- [Arquitetura](docs/ARQUITETURA.md)
+- [Requisitos](docs/REQUISITOS.md)
+- [Plano](docs/PLANO.md)
+
+## Histórico
+
+A release `v0.1.0` é um bootstrap Chromium anterior, mantido no histórico e na página de Releases do GitHub. A nova base WebView2 é uma linha de desenvolvimento separada.

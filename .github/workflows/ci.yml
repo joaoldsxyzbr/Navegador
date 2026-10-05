@@ -1,4 +1,4 @@
-name: Chromium Overlay CI
+name: WebView2 Windows CI
 
 on:
   push:
@@ -13,44 +13,25 @@ permissions:
   contents: read
 
 concurrency:
-  group: chromium-overlay-${{ github.event.pull_request.number || github.ref }}
+  group: webview2-windows-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate-overlay:
-    name: Validar overlay Chromium
+  build:
+    name: Compilar app Windows
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Validar estrutura
-        shell: pwsh
-        run: ./chromium/scripts/verify.ps1
 
-  compile-portable-tools:
-    name: Compilar ferramentas portáteis
-    runs-on: windows-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Configurar MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-      - name: Compilar launcher
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          cl /nologo /std:c++17 /O2 /EHsc /utf-8 /MT /DUNICODE /D_UNICODE launcher/Navegador.cpp /link /SUBSYSTEM:WINDOWS user32.lib shell32.lib /OUT:artifacts/Navegador.exe
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Compilar atualizador
-        shell: pwsh
-        run: |
-          cl /nologo /std:c++17 /O2 /EHsc /utf-8 /MT /DUNICODE /D_UNICODE updater/NavegadorUpdater.cpp /link /SUBSYSTEM:WINDOWS user32.lib winhttp.lib bcrypt.lib shell32.lib /OUT:"artifacts/Atualizar Navegador.exe"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Validar arquivos
-        shell: pwsh
-        run: |
-          if (-not (Test-Path "artifacts/Navegador.exe")) { throw "Navegador.exe ausente." }
-          if (-not (Test-Path "artifacts/Atualizar Navegador.exe")) { throw "Atualizador ausente." }
-          if (-not (Test-Path "updater/apply-update.ps1")) { throw "Aplicador ausente." }
+      - name: Configurar .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restaurar dependências
+        run: dotnet restore desktop/Navegador.Windows/Navegador.Windows.csproj
+
+      - name: Compilar
+        run: dotnet build desktop/Navegador.Windows/Navegador.Windows.csproj --configuration Release --no-restore

@@ -2,52 +2,39 @@
 
 ## Estado — 05/10/2026
 
-- A release v0.1.0 está publicada e inicia no Windows; ela usa Chromium e continua sendo a versão histórica/bootstrap.
-- Decisão atual: migrar a nova linha do Navegador para Firefox/Gecko, mantendo o Chrome como referência visual da interface.
-- O objetivo inicial é personalizar a interface web do Firefox usando Artifact Mode, que baixa componentes nativos prontos e evita recompilar o motor para mudanças de frontend.
-- Build Firefox no Windows pede 40 GB livres; runners padrão do GitHub têm 14 GB, então o protótipo precisa de máquina/runner compatível e autorizado.
-- Android usará GeckoView, mas terá interface separada; o Chrome visual precisa ser recriado no app Android.
+A direção foi simplificada para um app Windows próprio em C# / WinForms com WebView2. O repositório foi reiniciado numa nova árvore; o histórico Git e a release v0.1.0 continuam preservados.
 
-## Fase 1 — Provar o caminho Firefox desktop
+## Fase 1 — Protótipo Windows
 
-- [x] Decidir Firefox/Gecko como nova base.
-- [x] Definir Chrome como referência visual desktop.
-- [x] Escolher Artifact Mode como primeira opção para mudanças de frontend.
-- [ ] Preparar o ambiente compatível e obter fonte/artifacts Firefox.
-- [ ] Criar protótipo de abas, omnibox, toolbar, menu e tema escuro.
-- [ ] Confirmar que o protótipo compila em Artifact Mode sem build do motor.
-- [ ] Validar o resultado visual e funções nativas.
-- [ ] Registrar espaço, RAM, duração e limites reais.
+- [x] Definir WebView2 para PC e começar pelo Windows.
+- [x] Criar app WinForms com motor WebView2.
+- [x] Implementar abas, endereço/busca, voltar, avançar, recarregar e tema escuro.
+- [x] Guardar perfil em `Data/WebView2`.
+- [ ] Compilar e validar no CI Windows.
+- [ ] Testar no computador do João com WebView2 Runtime.
+- [ ] Ajustar visual e tratar navegação popup/links externos.
 
-## Fase 2 — Distribuição Windows
+## Fase 2 — Completar o MVP
 
-- [ ] Escolher/validar empacotamento portátil Firefox.
-- [ ] Adaptar launcher, perfil `Data/` e atualizador ao executável/layout Firefox.
-- [ ] Manter o pacote e perfil Chromium v0.1.0 separados; não atualizar cruzado.
-- [ ] Testar atualização, hash inválido, rollback e preservação dos dados.
-- [ ] Publicar uma primeira release Firefox somente após validar o pacote no Windows.
+- [ ] Favoritos e histórico.
+- [ ] Downloads com escolha de destino e tela de downloads.
+- [ ] Janela privada e exclusão de dados.
+- [ ] Tela inicial, configurações e acessibilidade.
+- [ ] Fluxo de atualização integrado e seguro.
 
-## Fase 3 — Recursos desktop
+## Fase 3 — Distribuição
 
-- [ ] Deixar modo escuro como padrão e manter Claro/Escuro/Sistema se viável.
-- [ ] Aplicar identidade Navegador sem usar marcas/recursos do Firefox indevidamente.
-- [ ] Validar downloads, janela privada, atalhos e recursos nativos.
-- [ ] Integrar o atualizador à UI após provar a integração segura com frontend Firefox.
+- [ ] Decidir como atender PCs sem WebView2 Runtime.
+- [ ] Gerar pacote portátil x64 e validar em pasta extraída.
+- [ ] Atualização com HTTPS, SHA-256, preservação do perfil e rollback.
+- [ ] Publicar uma nova release sem alterar a v0.1.0.
 
-## Fase 4 — Android
+## Fase 4 — Celular
 
-- [ ] Avaliar GeckoView e Android Components.
-- [ ] Criar shell Chrome-like independente para Android.
-- [ ] Validar navegação, abas, privado, downloads e atualização.
-- [ ] Criar APK/AAB quando o protótipo estiver funcional.
+- [ ] Reavaliar Android e iOS depois que a versão Windows estiver estável.
+- [ ] Definir motor e interface mobile separadamente.
+- [ ] Só então avaliar sincronização entre dispositivos.
 
-## Fora do escopo atual
+## Limites do primeiro protótipo
 
-- sync Windows ↔ Android;
-- backend/conta própria;
-- compilar mudanças em C/C++/Rust no motor Gecko sem necessidade comprovada.
-
-## Histórico
-
-- O overlay Chromium e a release v0.1.0 ficam registrados em [CHROMIUM.md](CHROMIUM.md).
-- A issue antiga de infraestrutura Chromium foi encerrada como não planejada para a nova direção; o protótipo Firefox é acompanhado na [issue #9](https://github.com/joaoldsxyzbr/Navegador/issues/9).
+O protótipo inicial não tem ainda favoritos, histórico visual, downloads, modo privado, configurações ou atualizador. O CI comprovará compilação; testar navegação real e o comportamento portátil ainda exige executar o app em Windows com o Runtime disponível.
