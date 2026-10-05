@@ -40,7 +40,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Instalar workload MAUI
-        run: dotnet workload install maui-windows
+        run: dotnet workload install maui-windows --skip-manifest-update
 
       - name: Publicar versão portátil
         shell: pwsh
@@ -55,11 +55,13 @@ jobs:
             "-r", "win-x64",
             "-p:WindowsPackageType=None",
             "-p:WindowsAppSDKSelfContained=true",
+            "-p:UseMonoRuntime=false",
             "-p:ApplicationDisplayVersion=$version",
             "-p:ApplicationVersion=${{ github.run_number }}",
             "-o", "artifacts/windows"
           )
           dotnet @publishArgs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Compress-Archive -Path artifacts/windows/* -DestinationPath artifacts/Navegador-windows-x64.zip
 
       - name: Armazenar pacote Windows
