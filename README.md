@@ -28,6 +28,16 @@ A interface upstream deve ser preservada sempre que possível:
 
 O diferencial do Navegador será principalmente **funcional**, por meio de novos recursos, configurações, integrações e defaults.
 
+## Requisitos principais
+
+- tema escuro nativo do Chromium por padrão, com opção Claro/Escuro/Sistema;
+- distribuição Windows portátil, sem instalador e com perfil local junto do aplicativo;
+- sincronização própria entre Windows e Android;
+- primeira fase de sync: favoritos, abas abertas, histórico e configurações;
+- dados sensíveis como senhas e passkeys só entram depois de criptografia ponta a ponta revisada.
+
+Os detalhes ficam em `docs/REQUISITOS.md`.
+
 ## Base atual
 
 - Chromium: **154.0.8037.92**
@@ -47,6 +57,7 @@ docs/
   ARQUITETURA.md
   CHROMIUM.md
   PLANO.md
+  REQUISITOS.md
 .github/
   workflows/
 ```
