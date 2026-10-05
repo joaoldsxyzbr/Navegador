@@ -109,6 +109,34 @@ Ordem de preferência:
 
 A regra é manter o delta para o upstream pequeno e evitar um fork de UI.
 
+## Tema
+
+O tema escuro é o padrão inicial do Navegador, usando a implementação nativa do Chromium. O usuário poderá alternar entre Escuro, Claro e Sistema. Isso é configuração do produto, não um fork visual.
+
+## Portabilidade Windows
+
+A distribuição Windows será portátil e manterá seu perfil em diretório controlado pelo próprio pacote, preferencialmente `Data/` ao lado do executável.
+
+O empacotamento deve apontar o Chromium para esse diretório de dados sem depender de instalação, serviço permanente ou configuração obrigatória no Registro.
+
+Dados protegidos pela criptografia do Windows podem permanecer vinculados ao usuário ou computador de origem; o projeto não deve contornar essa proteção. A sincronização própria será usada para transportar dados entre dispositivos.
+
+## Sincronização
+
+O Navegador não dependerá do Chrome Sync/Google Sync. Builds derivados de Chromium possuem restrições para login e serviços privados do Chrome, por isso a sincronização será um componente próprio.
+
+Arquitetura prevista:
+
+```text
+Windows Navegador ─┐
+                   ├── protocolo de sync próprio ── backend do Navegador
+Android Navegador ─┘
+```
+
+A primeira versão cobre favoritos, abas abertas, histórico e configurações. Senhas, passkeys e autofill exigem uma fase posterior com criptografia ponta a ponta.
+
+O protocolo e o código do backend devem permanecer documentados e versionados neste repositório.
+
 ## Atualização do Chromium
 
 Uma atualização segue este ciclo:
