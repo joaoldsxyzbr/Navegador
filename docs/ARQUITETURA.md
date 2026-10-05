@@ -52,6 +52,23 @@ Os favoritos mantêm no máximo 200 entradas.
 
 No Windows, os dados do WebView2 ficam em uma subpasta WebView2 dentro do AppDataDirectory para evitar escrita no diretório de instalação.
 
+## Downloads
+
+Downloads usam os recursos nativos do motor e da plataforma.
+
+### Windows
+
+O WebView2 mantém o diálogo padrão de download. O navegador ajusta o caminho apenas quando necessário para impedir sobrescrita silenciosa de um arquivo existente.
+
+### Android
+
+O WebView usa DownloadListener e delega o download ao DownloadManager do Android.
+
+- cookies da sessão são encaminhados ao download;
+- User-Agent é preservado;
+- Android 10 ou mais recente salva em Downloads público;
+- versões anteriores usam o diretório externo do aplicativo para evitar solicitar permissão ampla de armazenamento.
+
 ## Regras
 
 - Código específico de plataforma só entra em Platforms/.

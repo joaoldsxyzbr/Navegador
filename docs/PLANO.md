@@ -9,13 +9,14 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 - [x] Definir stack e arquitetura inicial.
 - [x] Criar repositório e documentação base.
 - [x] Criar o esqueleto funcional com navegação web.
-- [ ] Validar build Windows no GitHub Actions.
-- [ ] Validar build Android no GitHub Actions.
-- [ ] Implementar abas.
-- [ ] Implementar favoritos.
-- [ ] Implementar histórico local.
+- [x] Validar build Windows no GitHub Actions.
+- [x] Validar build Android no GitHub Actions.
+- [x] Implementar abas.
+- [x] Implementar favoritos.
+- [x] Implementar histórico local.
 - [ ] Implementar downloads.
 - [ ] Implementar modo privado.
+- [ ] Implementar configurações e atualização do navegador.
 - [ ] Preparar distribuição portátil no Windows.
 - [ ] Preparar pacote Android.
 
@@ -27,6 +28,10 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 4. Voltar à página inicial.
 5. Sincronizar a barra de endereço com a página atual.
 6. Rodar em Windows e Android a partir da mesma base.
+7. Manter abas, favoritos e histórico local.
+8. Baixar arquivos com integração nativa de cada plataforma.
+9. Oferecer modo privado com isolamento real.
+10. Permitir verificar e aplicar atualizações pelas configurações.
 
 ## Fora do primeiro MVP
 

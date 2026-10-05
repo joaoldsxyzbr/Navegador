@@ -11,6 +11,22 @@ public static class MauiProgram
             {
                 handler.PlatformView.Settings.SetSupportMultipleWindows(false);
             });
+
+        Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping(
+            "Downloads",
+            (handler, view) =>
+            {
+                Platforms.Android.WebViewDownloadIntegration.Configure(handler.PlatformView);
+            });
+#endif
+
+#if WINDOWS
+        Microsoft.Maui.Handlers.WebViewHandler.Mapper.AppendToMapping(
+            "Downloads",
+            (handler, view) =>
+            {
+                Platforms.Windows.WebViewDownloadIntegration.Configure(handler.PlatformView);
+            });
 #endif
 
         var builder = MauiApp.CreateBuilder();
