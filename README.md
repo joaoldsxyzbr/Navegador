@@ -32,9 +32,9 @@ O diferencial do Navegador será principalmente **funcional**, por meio de novos
 
 - tema escuro nativo do Chromium por padrão, com opção Claro/Escuro/Sistema;
 - distribuição Windows portátil, sem instalador e com perfil local junto do aplicativo;
-- sincronização própria entre Windows e Android;
-- primeira fase de sync: favoritos, abas abertas, histórico e configurações;
-- dados sensíveis como senhas e passkeys só entram depois de criptografia ponta a ponta revisada.
+- interface visual próxima do Chromium upstream;
+- Android continua no roadmap depois da base Windows estar reproduzível;
+- sincronização entre dispositivos fica **fora do escopo atual**.
 
 Os detalhes ficam em `docs/REQUISITOS.md`.
 
