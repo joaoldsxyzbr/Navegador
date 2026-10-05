@@ -18,11 +18,7 @@ internal sealed class BrowserForm : Form
         BackColor = WindowColor,
         Padding = new Padding(4, 4, 0, 0)
     };
-    private readonly Panel _pageHost = new()
-    {
-        Dock = DockStyle.Fill,
-        BackColor = Color.White
-    };
+    private readonly Panel _pageHost = new() { Dock = DockStyle.Fill, BackColor = Color.White };
     private readonly TextBox _address = new()
     {
         Anchor = AnchorStyles.Left | AnchorStyles.Right,
@@ -36,8 +32,9 @@ internal sealed class BrowserForm : Form
     private readonly Button _forwardButton;
     private readonly Button _reloadButton;
     private readonly Button _goButton;
+    private readonly Button _extensionsButton;
     private readonly List<BrowserTab> _tabs = [];
-    private CoreWebView2Environment? _environment;
+    private Task<CoreWebView2Environment>? _environmentTask;
     private BrowserTab? _activeTab;
     private int _nextTabNumber = 1;
 
@@ -59,19 +56,15 @@ internal sealed class BrowserForm : Form
         tabsBar.Controls.Add(_tabHeaders);
         tabsBar.Controls.Add(newTabButton);
 
-        var toolbar = new Panel
-        {
-            Dock = DockStyle.Fill,
-            BackColor = WindowColor,
-            Padding = new Padding(6, 5, 6, 5)
-        };
-
+        var toolbar = new Panel { Dock = DockStyle.Fill, BackColor = WindowColor };
         _backButton = CreateButton("‹", "Voltar");
         _forwardButton = CreateButton("›", "Avançar");
         _reloadButton = CreateButton("⟳", "Recarregar");
         var homeButton = CreateButton("⌂", "Nova guia");
         _goButton = CreateButton("Ir", "Abrir endereço");
+        _extensionsButton = CreateButton("Ext", "Extensões");
         _goButton.Width = 48;
+        _extensionsButton.Width = 48;
 
         _backButton.SetBounds(6, 5, 36, 36);
         _forwardButton.SetBounds(44, 5, 36, 36);
@@ -79,20 +72,23 @@ internal sealed class BrowserForm : Form
         homeButton.SetBounds(120, 5, 36, 36);
         _address.SetBounds(162, 8, 900, 30);
         _goButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        _extensionsButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         _goButton.SetBounds(0, 5, 48, 36);
+        _extensionsButton.SetBounds(0, 5, 48, 36);
 
         _backButton.Click += (_, _) => NavigateBack();
         _forwardButton.Click += (_, _) => NavigateForward();
         _reloadButton.Click += (_, _) => _activeTab?.View.CoreWebView2?.Reload();
         homeButton.Click += (_, _) => NavigateToHome();
         _goButton.Click += (_, _) => NavigateAddress();
+        _extensionsButton.Click += (_, _) => OpenExtensions();
         _address.KeyDown += (_, eventArgs) =>
         {
             if (eventArgs.KeyCode != Keys.Enter) return;
             eventArgs.SuppressKeyPress = true;
             NavigateAddress();
         };
-        toolbar.Controls.AddRange([_backButton, _forwardButton, _reloadButton, homeButton, _address, _goButton]);
+        toolbar.Controls.AddRange([_backButton, _forwardButton, _reloadButton, homeButton, _address, _extensionsButton, _goButton]);
 
         var layout = new TableLayoutPanel
         {
@@ -118,9 +114,10 @@ internal sealed class BrowserForm : Form
 
     private void LayoutAddressBar()
     {
-        var width = Math.Max(160, ClientSize.Width - 240);
+        var width = Math.Max(160, ClientSize.Width - 330);
         _address.Width = width;
-        _goButton.Left = Math.Max(162 + width + 6, ClientSize.Width - 60);
+        _extensionsButton.Left = ClientSize.Width - 112;
+        _goButton.Left = ClientSize.Width - 58;
     }
 
     private static Button CreateButton(string text, string accessibleName)
@@ -132,7 +129,7 @@ internal sealed class BrowserForm : Form
             FlatStyle = FlatStyle.Flat,
             BackColor = WindowColor,
             ForeColor = TextColor,
-            Font = new Font("Segoe UI", 11F),
+            Font = new Font("Segoe UI", 10F),
             TextAlign = ContentAlignment.MiddleCenter,
             UseVisualStyleBackColor = false
         };
@@ -154,10 +151,8 @@ internal sealed class BrowserForm : Form
 
         try
         {
-            _environment ??= await CoreWebView2Environment.CreateAsync(
-                userDataFolder: GetProfileDirectory());
-
-            await view.EnsureCoreWebView2Async(_environment);
+            var environment = await GetEnvironmentAsync();
+            await view.EnsureCoreWebView2Async(environment);
             AttachBrowserEvents(tab);
             view.CoreWebView2.Navigate(initialAddress ?? "about:blank");
         }
@@ -173,11 +168,42 @@ internal sealed class BrowserForm : Form
         }
     }
 
+    private Task<CoreWebView2Environment> GetEnvironmentAsync()
+    {
+        _environmentTask ??= CreateEnvironmentAsync();
+        return _environmentTask;
+    }
+
+    private static Task<CoreWebView2Environment> CreateEnvironmentAsync()
+    {
+        var options = new CoreWebView2EnvironmentOptions
+        {
+            AreBrowserExtensionsEnabled = true
+        };
+        return CoreWebView2Environment.CreateAsync(
+            userDataFolder: GetProfileDirectory(),
+            options: options);
+    }
+
     private static string GetProfileDirectory()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "Data", "WebView2");
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private void OpenExtensions()
+    {
+        var profile = _activeTab?.View.CoreWebView2?.Profile;
+        if (profile is null)
+        {
+            MessageBox.Show(this, "Aguarde a aba terminar de iniciar.", "Extensões",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        using var dialog = new ExtensionsForm(profile);
+        dialog.ShowDialog(this);
     }
 
     private void AttachBrowserEvents(BrowserTab tab)
@@ -235,9 +261,7 @@ internal sealed class BrowserForm : Form
         }
 
         if (_activeTab == tab)
-        {
             ActivateTab(_tabs[Math.Min(index, _tabs.Count - 1)]);
-        }
     }
 
     private void UpdateTabTitle(BrowserTab tab)
@@ -317,44 +341,36 @@ internal sealed class BrowserForm : Form
             _address.SelectAll();
             return true;
         }
-
         if (keyData == (Keys.Control | Keys.T))
         {
             _ = AddTabAsync();
             return true;
         }
-
         if (keyData == (Keys.Control | Keys.W))
         {
             if (_activeTab is not null) CloseTab(_activeTab);
             return true;
         }
-
         if (keyData == (Keys.Control | Keys.R))
         {
             _activeTab?.View.CoreWebView2?.Reload();
             return true;
         }
-
         if (keyData == (Keys.Alt | Keys.Left))
         {
             NavigateBack();
             return true;
         }
-
         if (keyData == (Keys.Alt | Keys.Right))
         {
             NavigateForward();
             return true;
         }
-
         return base.ProcessCmdKey(ref msg, keyData);
     }
 
-    private static string Shorten(string value, int length)
-    {
-        return value.Length <= length ? value : value[..(length - 1)] + "…";
-    }
+    private static string Shorten(string value, int length) =>
+        value.Length <= length ? value : value[..(length - 1)] + "…";
 
     private sealed class BrowserTab
     {
