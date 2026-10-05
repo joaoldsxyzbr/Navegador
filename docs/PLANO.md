@@ -50,4 +50,4 @@
 ## Histórico
 
 - O overlay Chromium e a release v0.1.0 ficam registrados em [CHROMIUM.md](CHROMIUM.md).
-- A issue antiga de infraestrutura Chromium será encerrada como não planejada para a nova direção; o protótipo Firefox passa a ser acompanhado na issue vinculada a este plano.
+- A issue antiga de infraestrutura Chromium foi encerrada como não planejada para a nova direção; o protótipo Firefox é acompanhado na [issue #9](https://github.com/joaoldsxyzbr/Navegador/issues/9).

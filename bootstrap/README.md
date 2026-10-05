@@ -1,24 +1,11 @@
-# Bootstrap da primeira versão
+# Bootstrap histórico v0.1.0 — Chromium
 
-A primeira versão testável do Navegador usa temporariamente um snapshot oficial do Chromium para Windows x64 como base binária.
+A release v0.1.0 foi empacotada a partir de um snapshot Chromium oficial Windows x64. Ela permanece publicada como registro histórico e não é a base da nova linha Firefox.
 
 - Chromium snapshot: 154.0.8037.0
-- revisão: 1689481
-- origem: infraestrutura oficial chromium-browser-snapshots
+- Revisão: 1689481
+- Origem: infraestrutura oficial chromium-browser-snapshots
 
-## Por que existe
+O pacote serviu para validar launcher, perfil portátil, atualizador separado e release. Não foi build próprio do overlay Chromium.
 
-O runner Windows padrão do GitHub não possui espaço suficiente para o checkout e build completo do Chromium. A documentação oficial do Chromium exige pelo menos 100 GB livres para o build Windows, enquanto o runner padrão do GitHub possui 14 GB.
-
-O bootstrap permite validar agora:
-
-- modo portátil;
-- launcher;
-- tema escuro padrão;
-- atualização automática do pacote;
-- preservação da pasta Data;
-- processo de release.
-
-## Limite
-
-Este snapshot não é o build final do overlay do Navegador. Ele é usado somente na primeira etapa testável. Assim que houver um ambiente de build Chromium adequado, o conteúdo de App será substituído pelo build próprio gerado a partir de chromium/VERSION e dos patches do projeto, sem mudar o formato portátil nem o protocolo do atualizador.
+A nova arquitetura e o próximo protótipo estão em [docs/FIREFOX.md](../docs/FIREFOX.md). Não substituir o pacote nem o perfil Chromium pelo futuro Firefox usando o atualizador da v0.1.0.
