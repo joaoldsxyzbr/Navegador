@@ -5,7 +5,7 @@
 - A release **v0.1.0** está publicada e o usuário confirmou que o navegador inicia no Windows.
 - O CI de overlay e o workflow da release passaram no commit `51e89c9524634497e3b6150d4d6c5199a02a3432`.
 - A v0.1.0 ainda empacota um snapshot oficial do Chromium. Ela valida o launcher, o perfil portátil, o atualizador separado e a publicação; **não** valida o build completo do overlay.
-- A pendência técnica prioritária é executar o primeiro build integral do Chromium em um ambiente Windows com recursos suficientes.
+- O build integral está bloqueado porque não há um ambiente de build Windows disponível. Até existir um ambiente autorizado e compatível, o trabalho continua sobre o bootstrap v0.1.0 e tarefas que não exigem compilar o Chromium inteiro.
 
 ## Objetivo
 
