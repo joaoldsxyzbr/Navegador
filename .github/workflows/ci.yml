@@ -1,6 +1,9 @@
-name: CI
+name: Chromium Overlay CI
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -10,65 +13,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: chromium-overlay-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build ${{ matrix.target }}
+  validate-overlay:
+    name: Validar overlay Chromium
     runs-on: windows-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: net10.0-windows10.0.19041.0
-            workload: maui-windows
-            java: false
-          - target: net10.0-android
-            workload: maui-android
-            java: true
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configurar .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Configurar Java 21
-        if: matrix.java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Instalar workload
+      - name: Validar estrutura
         shell: pwsh
-        run: dotnet workload install ${{ matrix.workload }}
-
-      - name: Restaurar Core
-        shell: pwsh
-        run: dotnet restore src/Navegador.Core/Navegador.Core.csproj
-
-      - name: Restaurar aplicativo Windows
-        if: contains(matrix.target, 'windows')
-        shell: pwsh
-        run: dotnet restore src/Navegador/Navegador.csproj --no-dependencies -p:TargetFramework=${{ matrix.target }} -r win-x64
-
-      - name: Restaurar aplicativo Android
-        if: contains(matrix.target, 'android')
-        shell: pwsh
-        run: dotnet restore src/Navegador/Navegador.csproj --no-dependencies -p:TargetFramework=${{ matrix.target }}
-
-      - name: Compilar Windows
-        if: contains(matrix.target, 'windows')
-        shell: pwsh
-        run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }} -r win-x64 --no-restore
-
-      - name: Compilar Android
-        if: contains(matrix.target, 'android')
-        shell: pwsh
-        run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }} --no-restore
+        run: ./chromium/scripts/verify.ps1

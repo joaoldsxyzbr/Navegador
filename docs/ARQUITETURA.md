@@ -2,119 +2,105 @@
 
 ## Decisão principal
 
-O projeto usa .NET MAUI para compartilhar a maior parte da interface e da lógica entre Windows e Android.
+O Navegador passa a ser uma distribuição própria baseada em **Chromium upstream + overlay versionado**.
 
-### Motores web
+A antiga aplicação .NET MAUI/WebView foi removida da `main`. O projeto não usa mais WebView2 como fundação do produto.
 
-- Windows: WebView2, baseado em Edge/Chromium.
-- Android: android.webkit.WebView, baseado em Chromium.
+## Objetivo arquitetural
 
-O projeto não embarca um Chromium completo próprio no MVP. Isso reduz tamanho, atualização e manutenção.
+Ter um navegador Chromium próprio sem manter um fork profundo do motor.
 
-## Camadas
+```text
+Chromium upstream limpo
+        +
+configuração
+        +
+patches pequenos
+        +
+branding
+        ↓
+Navegador
+```
 
-### Navegador.Core
+## Fonte de verdade
 
-Código independente de interface e plataforma.
+O repositório `joaoldsxyzbr/Navegador` contém somente o que diferencia o Navegador do Chromium e tudo que torna o build reproduzível.
 
-Responsabilidades iniciais:
+O código completo do Chromium é obtido externamente durante a preparação do ambiente e nunca deve ser commitado aqui.
 
-- interpretar texto da barra de endereço;
-- diferenciar URL de pesquisa;
-- manter regras que possam ser testadas sem carregar MAUI.
+## Componentes
 
-### Navegador
+### chromium/VERSION
 
-Aplicativo MAUI.
+Fixa exatamente a versão upstream usada pelo projeto. Atualizar Chromium é uma mudança explícita e revisável.
 
-Responsabilidades:
+### chromium/args
 
-- interface;
-- WebView;
-- abas e estado visual;
-- navegação;
-- favoritos e histórico local;
-- integração com Windows e Android;
-- consulta, validação e início de atualização.
+Argumentos GN próprios por plataforma e perfil de build.
 
-## Abas
+### chromium/patches
 
-Cada aba possui sua própria instância de WebView. Apenas a aba ativa fica visível. Isso preserva a pilha de navegação nativa de cada aba e evita recriar manualmente o histórico de voltar/avançar.
+Patches ordenados e reaplicáveis. `series` define a ordem oficial.
 
-## Persistência local
+Regras:
 
-Favoritos e histórico são arquivos JSON armazenados em FileSystem.Current.AppDataDirectory.
+- um objetivo por patch;
+- nomes numerados;
+- evitar refatorações upstream desnecessárias;
+- patch que não reaplica bloqueia a atualização até ser corrigido ou removido.
 
-- favoritos.json
-- historico.json
+### chromium/branding
 
-O histórico mantém no máximo 500 entradas.
-Os favoritos mantêm no máximo 200 entradas.
+Fontes da identidade do Navegador. A integração desses recursos ao Chromium deve acontecer por patches pequenos.
 
-No Windows, os dados do WebView2 ficam em uma subpasta WebView2 dentro do AppDataDirectory para evitar escrita no diretório de instalação.
+### chromium/scripts
 
-## Downloads
+Automação de preparação, validação e build. Os scripts devem operar sobre um checkout externo e nunca depender de uma cópia vendorizada do Chromium no Git.
 
-Downloads usam os recursos nativos do motor e da plataforma.
-
-### Windows
-
-O WebView2 mantém o diálogo padrão de download. O navegador ajusta o caminho apenas quando necessário para impedir sobrescrita silenciosa de um arquivo existente.
-
-### Android
-
-O WebView usa DownloadListener e delega o download ao DownloadManager do Android.
-
-- cookies da sessão são encaminhados ao download;
-- User-Agent é preservado;
-- Android 10 ou mais recente salva em Downloads público;
-- versões anteriores usam o diretório externo do aplicativo para evitar solicitar permissão ampla de armazenamento.
-
-## Modo privado
-
-O modo privado é separado da pilha normal de abas para garantir isolamento real.
+## Plataforma
 
 ### Windows
 
-- abre uma janela nativa separada;
-- inicializa WebView2 com perfil InPrivate;
-- não passa pela persistência de histórico ou favoritos.
+É a primeira plataforma da nova arquitetura. O objetivo inicial é produzir um executável Chromium funcional, depois substituir identidade, defaults e recursos gradualmente.
 
 ### Android
 
-- disponível a partir do Android 9 (API 28);
-- abre uma Activity dedicada no processo :private;
-- chama WebView.SetDataDirectorySuffix("private") antes de criar o WebView;
-- usa diretório de dados independente e limpa cookies, armazenamento web, cache e histórico ao encerrar;
-- não acessa o BrowserDataStore do aplicativo.
+Continua no escopo do produto, mas só entra depois que a receita Chromium para Windows estiver reproduzível. Isso reduz duas frentes pesadas de build ao mesmo tempo.
 
-No Android 7 e 8, o recurso fica indisponível porque a API de isolamento necessária não existe.
+## Estratégia de customização
 
-## Atualizações
+Ordem de preferência:
 
-- O aplicativo consulta apenas a última release pública do próprio repositório.
-- Nenhum token pessoal fica embutido no navegador.
-- O pacote da plataforma é selecionado por nome fixo, URL HTTPS e host github.com.
-- O hash SHA-256 informado pela API do GitHub é obrigatório e conferido após o download.
-- O usuário confirma o download antes de instalar.
-- Windows troca os arquivos da pasta portátil depois de encerrar o navegador.
-- Android abre o instalador de sistema para a confirmação final.
-- APKs de todas as versões precisam manter a mesma chave de assinatura.
+1. argumento GN ou configuração suportada;
+2. preferência/default do Chromium;
+3. recurso/branding;
+4. patch pequeno;
+5. alteração maior somente quando houver benefício claro.
 
-## Distribuição
+A regra é manter o delta para o upstream pequeno.
 
-O workflow .github/workflows/release.yml gera um ZIP portátil para Windows e um APK assinado para Android em cada tag v*. A chave Android fica apenas nos segredos do GitHub Actions. A consulta do app depende de releases públicas.
+## Atualização do Chromium
+
+Uma atualização segue este ciclo:
+
+1. escolher uma versão upstream;
+2. atualizar `chromium/VERSION`;
+3. preparar uma árvore limpa;
+4. aplicar `chromium/patches/series`;
+5. corrigir somente patches incompatíveis;
+6. gerar o build;
+7. executar testes;
+8. registrar incompatibilidades e decisões.
 
 ## CI
 
-O workflow completo roda no pull request para main ou por execução manual. Ele não roda em cada push da preview.
+O CI comum valida o overlay, a versão, a lista de patches e a ausência do antigo projeto MAUI.
 
-Cada alvo instala apenas o workload necessário. O projeto Navegador.Core é restaurado separadamente em net10.0, e o app é restaurado sem dependências para o TargetFramework da matriz. No Windows, restore e build usam o RID win-x64 para obter o runtime pack correspondente.
+O build integral do Chromium não roda no CI leve porque checkout e compilação são caros em disco e tempo. Ele terá workflow dedicado quando a infraestrutura de build estiver definida.
 
-## Regras
+## Segurança
 
-- Código específico de plataforma só entra em Platforms/.
-- Regras reutilizáveis devem ficar em Navegador.Core.
-- Recursos novos devem evitar serviços em segundo plano sem necessidade.
-- Armazenamento de histórico, favoritos e configurações é local por padrão.
-- Não adicionar telemetria sem decisão explícita.
+- Chromium deve permanecer próximo da versão estável suportada.
+- Nenhuma chave ou token deve entrar em patches, scripts ou argumentos.
+- Patches que alterem sandbox, isolamento de processos, TLS, permissões ou segurança exigem revisão específica.
+- Recursos Google não devem ser habilitados por segredo embutido no binário.

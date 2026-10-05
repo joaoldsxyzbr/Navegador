@@ -1,0 +1,6 @@
+is_debug = false
+is_component_build = false
+symbol_level = 0
+blink_symbol_level = 0
+v8_symbol_level = 0
+target_cpu = "x64"

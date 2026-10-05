@@ -1,64 +1,73 @@
 # Navegador
 
-Navegador simples, leve e multiplataforma para **Windows e Android**, com uma base de código compartilhada em **.NET MAUI**.
+Navegador simples e leve construído como uma distribuição própria do Chromium.
 
-## Objetivo
+## Estratégia
 
-Criar um navegador enxuto, rápido e fácil de manter, evitando recursos que não tragam valor ao uso diário.
+O projeto segue um modelo de overlay inspirado em distribuições que mantêm o motor upstream quase intacto:
 
-## Stack inicial
+- Chromium upstream não é copiado para este repositório;
+- a versão base fica fixada em `chromium/VERSION`;
+- configurações de build ficam em `chromium/args/`;
+- alterações próprias entram como patches pequenos e numerados em `chromium/patches/`;
+- identidade visual e recursos próprios ficam em `chromium/branding/`;
+- scripts em `chromium/scripts/` preparam e compilam uma árvore Chromium externa.
 
-- .NET 10
-- .NET MAUI
-- C# + XAML
-- Windows: WebView2 (Edge/Chromium)
-- Android: Android WebView (Chromium)
+A fonte de verdade do Navegador é este repositório. O checkout completo do Chromium é apenas material de build e não deve ser commitado.
 
-## MVP
+## Base atual
 
-- Barra de endereço e pesquisa
-- Voltar, avançar e atualizar
-- Abas
-- Página inicial
-- Navegação HTTPS
-- Favoritos e histórico local
-- Downloads nativos
-- Modo privado isolado
-- Atualizações pelas configurações com confirmação e verificação SHA-256
-- Releases com pacote portátil Windows e APK Android assinado
-
-## Modo privado
-
-- Windows: janela separada usando perfil WebView2 em modo InPrivate.
-- Android 9+: atividade em processo separado, com diretório WebView exclusivo e limpeza ao encerrar.
-- Android 7 e 8: o modo privado fica indisponível para não oferecer isolamento falso.
-
-## Plataformas
-
-- Windows 10 1809+ / Windows 11
-- Android
+- Chromium: **154.0.8037.92**
+- Plataforma inicial da nova arquitetura: **Windows x64**
+- Android: fase seguinte, depois que o fluxo desktop estiver reproduzível
 
 ## Estrutura
 
-    src/
-      Navegador/
-    docs/
-      PLANO.md
-      ARQUITETURA.md
-      ATUALIZACOES.md
-    .github/
-      workflows/
+```text
+chromium/
+  VERSION
+  args/
+  branding/
+  patches/
+  scripts/
+docs/
+  ARQUITETURA.md
+  CHROMIUM.md
+  PLANO.md
+.github/
+  workflows/
+```
 
-## Entrega e CI
+## Fluxo
 
-O desenvolvimento ocorre em preview. O CI pesado roda no pull request final para main ou manualmente por workflow_dispatch. Releases são geradas por tags v*.
+```text
+Chromium upstream
+      +
+args de build
+      +
+patches do Navegador
+      +
+branding
+      ↓
+Navegador
+```
+
+## Validação rápida
+
+No PowerShell:
+
+```powershell
+./chromium/scripts/verify.ps1
+```
+
+Para preparar uma árvore externa do Chromium, instale `depot_tools` e siga `docs/CHROMIUM.md`.
 
 ## Princípios
 
-1. Leveza antes de excesso de recursos.
-2. Uma base compartilhada sempre que possível.
-3. Código específico de plataforma apenas quando necessário.
-4. Segurança e privacidade por padrão.
-5. GitHub como fonte de verdade do projeto.
-
-O fluxo de publicação, assinatura e atualização está em docs/ATUALIZACOES.md.
+1. Alterar o mínimo possível no Chromium.
+2. Preferir configuração antes de patch.
+3. Preferir patch isolado antes de alteração ampla.
+4. Manter cada patch documentado e reaplicável.
+5. Atualizações de segurança do upstream têm prioridade.
+6. Não versionar o checkout nem artefatos de build do Chromium.
+7. GitHub é a fonte de verdade do projeto.
