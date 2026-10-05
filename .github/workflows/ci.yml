@@ -49,9 +49,13 @@ jobs:
         shell: pwsh
         run: dotnet workload install ${{ matrix.workload }}
 
-      - name: Restaurar
+      - name: Restaurar Core
         shell: pwsh
-        run: dotnet restore src/Navegador/Navegador.csproj -p:TargetFramework=${{ matrix.target }}
+        run: dotnet restore src/Navegador.Core/Navegador.Core.csproj
+
+      - name: Restaurar aplicativo
+        shell: pwsh
+        run: dotnet restore src/Navegador/Navegador.csproj --no-dependencies -p:TargetFramework=${{ matrix.target }}
 
       - name: Compilar
         shell: pwsh
