@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Application
+    x:Class="Navegador.App"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <Color x:Key="BackgroundColor">#111827</Color>
+            <Color x:Key="SurfaceColor">#1F2937</Color>
+            <Color x:Key="TextColor">#F9FAFB</Color>
+            <Color x:Key="MutedTextColor">#9CA3AF</Color>
+            <Style TargetType="ContentPage">
+                <Setter Property="BackgroundColor" Value="{StaticResource BackgroundColor}" />
+            </Style>
+            <Style TargetType="Button">
+                <Setter Property="BackgroundColor" Value="{StaticResource SurfaceColor}" />
+                <Setter Property="TextColor" Value="{StaticResource TextColor}" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Padding" Value="12,8" />
+                <Setter Property="MinimumHeightRequest" Value="40" />
+            </Style>
+            <Style TargetType="Entry">
+                <Setter Property="BackgroundColor" Value="{StaticResource SurfaceColor}" />
+                <Setter Property="TextColor" Value="{StaticResource TextColor}" />
+                <Setter Property="PlaceholderColor" Value="{StaticResource MutedTextColor}" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

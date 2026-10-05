@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Navegador.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Navegador">
+
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8" Padding="10">
+        <HorizontalStackLayout Grid.Row="0" Spacing="8">
+            <Button
+                x:Name="BackButton"
+                Text="‹"
+                Clicked="OnBackClicked"
+                IsEnabled="False"
+                SemanticProperties.Description="Voltar" />
+            <Button
+                x:Name="ForwardButton"
+                Text="›"
+                Clicked="OnForwardClicked"
+                IsEnabled="False"
+                SemanticProperties.Description="Avançar" />
+            <Button
+                Text="↻"
+                Clicked="OnReloadClicked"
+                SemanticProperties.Description="Atualizar" />
+            <Button
+                Text="⌂"
+                Clicked="OnHomeClicked"
+                SemanticProperties.Description="Página inicial" />
+        </HorizontalStackLayout>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <Entry
+                x:Name="AddressEntry"
+                Grid.Column="0"
+                Placeholder="Digite um endereço ou pesquise"
+                ReturnType="Go"
+                Completed="OnAddressCompleted"
+                ClearButtonVisibility="WhileEditing" />
+            <Button
+                Grid.Column="1"
+                Text="Ir"
+                Clicked="OnGoClicked" />
+        </Grid>
+
+        <WebView
+            x:Name="Browser"
+            Grid.Row="2"
+            Navigated="OnBrowserNavigated" />
+    </Grid>
+</ContentPage>

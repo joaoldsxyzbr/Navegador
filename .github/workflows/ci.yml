@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - preview
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - net10.0-windows10.0.19041.0
+          - net10.0-android
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Configurar Java 21
+        if: contains(matrix.target, 'android')
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Instalar workload MAUI
+        shell: pwsh
+        run: dotnet workload install maui
+
+      - name: Restaurar
+        shell: pwsh
+        run: dotnet restore src/Navegador/Navegador.csproj -p:TargetFramework=${{ matrix.target }}
+
+      - name: Compilar
+        shell: pwsh
+        run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }} --no-restore
