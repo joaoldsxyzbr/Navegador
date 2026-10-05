@@ -6,6 +6,21 @@ O repositório guarda o overlay do Navegador. O checkout completo do Chromium fi
 
 A versão do overlay está em `chromium/VERSION`. A v0.1.0 publicada usa um snapshot oficial de bootstrap; ela não substitui o build próprio descrito neste documento.
 
+## Fluxo atual: bootstrap
+
+Enquanto não houver ambiente de build completo, o workflow `.github/workflows/release.yml` executa o fluxo leve:
+
+1. lê a versão do Navegador e a revisão oficial fixada em `bootstrap/SNAPSHOT_REVISION`;
+2. baixa o snapshot Chromium Windows x64;
+3. compila o launcher e o atualizador;
+4. empacota os binários e o perfil portátil;
+5. inicia Chromium em modo headless e verifica que o endpoint local DevTools respondeu;
+6. reabre o ZIP, valida arquivos/versão/hash e publica a release com manifesto.
+
+Isso confirma que o pacote pode ser montado e que Chromium inicia no runner. A revisão upstream é binária: não aplicamos nossos patches dentro de `chrome.exe`. Por isso, esse fluxo não valida identidade própria, tema escuro padrão ou alterações internas do navegador. Mudanças no launcher e no atualizador podem seguir nesse CI; mudanças internas no Chromium dependem da compilação completa.
+
+A revisão deve continuar fixada e só deve avançar junto de uma versão do Navegador depois de validar segurança, inicialização e atualização. O release workflow é disparado pelo arquivo `release/REQUEST` ou manualmente.
+
 ## Requisitos para o primeiro build Windows
 
 A documentação oficial do Chromium para Windows, consultada em 05/10/2026, indica:
