@@ -229,7 +229,7 @@ public sealed class PrivateBrowserActivity : Activity
     }
 
     private sealed class CookieRemovalCallback(TaskCompletionSource<bool> completion)
-        : Java.Lang.Object, Android.Webkit.IValueCallback
+        : Java.Lang.Object, global::Android.Webkit.IValueCallback
     {
         public void OnReceiveValue(Java.Lang.Object? value) =>
             completion.TrySetResult(true);
