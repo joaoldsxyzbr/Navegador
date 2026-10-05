@@ -121,6 +121,22 @@ O empacotamento deve apontar o Chromium para esse diretório de dados sem depend
 
 Dados protegidos pela criptografia do Windows podem permanecer vinculados ao usuário ou computador de origem; o projeto não deve contornar essa proteção. Copiar a pasta portátil não garante a reutilização de cookies, senhas ou outros segredos protegidos em outro computador.
 
+## Atualização do aplicativo
+
+O Windows portátil usa uma camada própria e pequena ao redor do Chromium:
+
+- Navegador.exe inicia App/chrome.exe apontando o perfil para Data/;
+- Atualizar Navegador.exe consulta o manifesto da release mais recente;
+- o pacote é aceito somente após validação SHA-256;
+- Updater/apply-update.ps1 substitui o conjunto gerenciado e preserva Data/;
+- um backup temporário permite rollback se a troca falhar.
+
+Na primeira versão testável, o atualizador fica separado da UI do Chromium. Quando o build próprio estiver disponível, um patch pequeno poderá ligar o mesmo fluxo à página Sobre o Navegador.
+
+### Bootstrap v0.1.0
+
+A v0.1.0 usa temporariamente um snapshot oficial do Chromium em App/. Isso permite validar portabilidade e atualização sem fingir que o build integral do overlay já ocorreu. O snapshot é fixado no repositório e será removido quando houver infraestrutura adequada para o build completo.
+
 ## Sincronização
 
 Sincronização entre dispositivos está **fora do escopo atual**.

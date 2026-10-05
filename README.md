@@ -32,9 +32,12 @@ O diferencial do Navegador será principalmente **funcional**, por meio de novos
 
 - tema escuro nativo do Chromium por padrão, com opção Claro/Escuro/Sistema;
 - distribuição Windows portátil, sem instalador e com perfil local junto do aplicativo;
+- atualizador próprio com verificação, download, SHA-256, preservação de Data/ e rollback;
 - interface visual próxima do Chromium upstream;
 - Android continua no roadmap depois da base Windows estar reproduzível;
 - sincronização entre dispositivos fica **fora do escopo atual**.
+
+A primeira versão Chromium do projeto é a **v0.1.0**. Até existir um ambiente capaz de compilar o Chromium completo, o pacote testável usa um snapshot oficial fixado como bootstrap. Essa limitação está documentada em `bootstrap/README.md`.
 
 Os detalhes ficam em `docs/REQUISITOS.md`.
 
@@ -58,6 +61,7 @@ docs/
   CHROMIUM.md
   PLANO.md
   REQUISITOS.md
+  ATUALIZACOES.md
 .github/
   workflows/
 ```

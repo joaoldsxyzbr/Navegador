@@ -28,17 +28,20 @@ Transformar o Navegador em uma distribuição Chromium própria, leve de manter,
 ## Fase 3 — Base do produto
 
 - [ ] Tornar o tema escuro o padrão, preservando Claro/Escuro/Sistema.
-- [ ] Criar launcher/empacotamento portátil Windows.
-- [ ] Manter o perfil em `Data/` junto do pacote portátil.
+- [x] Criar launcher/empacotamento portátil Windows.
+- [x] Manter o perfil em `Data/` junto do pacote portátil.
 - [ ] Validar execução sem instalador e sem privilégios administrativos.
 - [ ] Definir a primeira função adicional.
 - [ ] Integrar novos recursos usando componentes nativos do Chromium.
 - [ ] Evitar alterações na disposição visual de abas, omnibox, menus e configurações.
 - [ ] Revisar recursos Chromium que ficam habilitados.
 - [ ] Definir defaults de privacidade e telemetria.
-- [ ] Definir política de atualizações.
+- [x] Definir política de atualizações.
+- [x] Implementar atualizador Windows com manifesto, SHA-256, preservação de `Data/` e rollback.
+- [ ] Integrar o atualizador à página nativa Sobre o Navegador quando o Chromium próprio estiver compilando.
 - [ ] Validar abas, downloads, histórico, favoritos, perfis e modo privado.
-- [ ] Criar empacotamento Windows x64.
+- [x] Criar empacotamento Windows x64 bootstrap.
+- [ ] Substituir o snapshot bootstrap pelo build próprio do overlay.
 
 ## Fase 4 — Atualização upstream
 

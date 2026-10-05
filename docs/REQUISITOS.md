@@ -38,6 +38,22 @@ Dados protegidos pelas APIs criptográficas do sistema operacional podem ficar v
 
 O Navegador não tentará contornar essas proteções do sistema operacional.
 
+## Atualizações
+
+A distribuição Windows deve permitir atualização sem baixar e substituir manualmente a pasta.
+
+Requisitos atuais:
+
+- um executável próprio deve oferecer a ação Verificar atualizações;
+- o pacote deve ser baixado por HTTPS;
+- o SHA-256 publicado deve ser validado antes da instalação;
+- Data/ nunca deve ser substituída pelo atualizador;
+- falhas durante a troca devem restaurar a versão anterior;
+- a primeira implementação usa pacote completo; atualização diferencial poderá ser adicionada depois;
+- não deve existir serviço residente obrigatório para manter o caráter portátil.
+
+A integração desse fluxo à página Sobre o Navegador fica para a fase em que o Chromium próprio estiver sendo compilado.
+
 ## Sincronização
 
 Sincronização entre Windows e Android fica **fora do escopo atual**.
