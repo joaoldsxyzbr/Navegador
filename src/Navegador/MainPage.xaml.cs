@@ -14,6 +14,13 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+        ToolbarItems.Add(new ToolbarItem
+        {
+            Text = "Configurações",
+            Order = ToolbarItemOrder.Primary,
+            Priority = 0,
+            Command = new Command(async () => await Navigation.PushModalAsync(new BrowserSettingsPage()))
+        });
         CreateTab(AddressResolver.HomeUrl);
     }
 

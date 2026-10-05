@@ -23,14 +23,15 @@ Criar um navegador enxuto, rápido e fácil de manter, evitando recursos que nã
 - Navegação HTTPS
 - Favoritos e histórico local
 - Downloads nativos
-- Modo privado realmente isolado
-- Base para configurações e atualização do navegador
+- Modo privado isolado
+- Atualizações pelas configurações com confirmação e verificação SHA-256
+- Releases com pacote portátil Windows e APK Android assinado
 
 ## Modo privado
 
 - Windows: janela separada usando perfil WebView2 em modo InPrivate.
-- Android 9+: atividade em processo separado, com diretório WebView exclusivo e limpeza de cookies, cache e armazenamento ao encerrar.
-- Android 7 e 8: o modo privado fica indisponível para não oferecer um isolamento falso.
+- Android 9+: atividade em processo separado, com diretório WebView exclusivo e limpeza ao encerrar.
+- Android 7 e 8: o modo privado fica indisponível para não oferecer isolamento falso.
 
 ## Plataformas
 
@@ -39,19 +40,18 @@ Criar um navegador enxuto, rápido e fácil de manter, evitando recursos que nã
 
 ## Estrutura
 
-```text
-src/
-  Navegador/
-docs/
-  PLANO.md
-  ARQUITETURA.md
-.github/
-  workflows/
-```
+    src/
+      Navegador/
+    docs/
+      PLANO.md
+      ARQUITETURA.md
+      ATUALIZACOES.md
+    .github/
+      workflows/
 
 ## Entrega e CI
 
-O desenvolvimento ocorre em `preview`. O CI pesado não roda a cada push: ele é executado no pull request final para `main` ou manualmente por `workflow_dispatch`.
+O desenvolvimento ocorre em preview. O CI pesado roda no pull request final para main ou manualmente por workflow_dispatch. Releases são geradas por tags v*.
 
 ## Princípios
 
@@ -60,3 +60,5 @@ O desenvolvimento ocorre em `preview`. O CI pesado não roda a cada push: ele é
 3. Código específico de plataforma apenas quando necessário.
 4. Segurança e privacidade por padrão.
 5. GitHub como fonte de verdade do projeto.
+
+O fluxo de publicação, assinatura e atualização está em docs/ATUALIZACOES.md.

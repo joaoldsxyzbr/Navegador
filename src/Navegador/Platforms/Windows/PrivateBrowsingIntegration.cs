@@ -65,9 +65,7 @@ internal static class PrivateBrowsingIntegration
                 FileSystem.Current.AppDataDirectory,
                 "WebView2");
 
-            var environment = await CoreWebView2Environment.CreateAsync(
-                browserExecutableFolder: null,
-                userDataFolder: userDataFolder);
+            var environment = await CoreWebView2Environment.CreateAsync(null, userDataFolder);
 
             var options = environment.CreateCoreWebView2ControllerOptions();
             options.ProfileName = "NavegadorPrivate";
@@ -79,12 +77,7 @@ internal static class PrivateBrowsingIntegration
                 throw new InvalidOperationException("WebView2 privado não foi inicializado.");
 
             Navegador.Platforms.Windows.WebViewDownloadIntegration.Configure(_browser);
-
-            _browser.CoreWebView2.NavigationCompleted += (_, _) =>
-            {
-                UpdateNavigationState();
-            };
-
+            _browser.CoreWebView2.NavigationCompleted += (_, _) => UpdateNavigationState();
             Navigate(AddressResolver.HomeUrl);
         }
 
@@ -111,42 +104,17 @@ internal static class PrivateBrowsingIntegration
                 ColumnSpacing = 6
             };
 
-            toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
-            {
-                Width = WinUIGridLength.Auto
-            });
-
-            toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
-            {
-                Width = WinUIGridLength.Auto
-            });
-
-            toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
-            {
-                Width = WinUIGridLength.Auto
-            });
-
+            toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition { Width = WinUIGridLength.Auto });
+            toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition { Width = WinUIGridLength.Auto });
+            toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition { Width = WinUIGridLength.Auto });
             toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
             {
                 Width = new WinUIGridLength(1, WinUIGridUnitType.Star)
             });
+            toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition { Width = WinUIGridLength.Auto });
 
-            toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
-            {
-                Width = WinUIGridLength.Auto
-            });
-
-            var reloadButton = new WinUIControls.Button
-            {
-                Content = "↻",
-                MinWidth = 44
-            };
-
-            var goButton = new WinUIControls.Button
-            {
-                Content = "Ir",
-                MinWidth = 52
-            };
+            var reloadButton = new WinUIControls.Button { Content = "↻", MinWidth = 44 };
+            var goButton = new WinUIControls.Button { Content = "Ir", MinWidth = 52 };
 
             _backButton.Click += (_, _) =>
             {
@@ -177,7 +145,6 @@ internal static class PrivateBrowsingIntegration
 
             WinUIControls.Grid.SetRow(toolbar, 0);
             WinUIControls.Grid.SetRow(_browser, 1);
-
             root.Children.Add(toolbar);
             root.Children.Add(_browser);
 
@@ -200,7 +167,6 @@ internal static class PrivateBrowsingIntegration
         private void UpdateNavigationState()
         {
             var core = _browser.CoreWebView2;
-
             _backButton.IsEnabled = core?.CanGoBack == true;
             _forwardButton.IsEnabled = core?.CanGoForward == true;
 

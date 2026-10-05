@@ -34,7 +34,8 @@ Responsabilidades:
 - abas e estado visual;
 - navegação;
 - favoritos e histórico local;
-- integração com Windows e Android.
+- integração com Windows e Android;
+- consulta, validação e início de atualização.
 
 ## Abas
 
@@ -71,31 +72,44 @@ O WebView usa DownloadListener e delega o download ao DownloadManager do Android
 
 ## Modo privado
 
-O modo privado é separado da pilha normal de abas para garantir isolamento real, e não apenas ocultar o histórico da interface.
+O modo privado é separado da pilha normal de abas para garantir isolamento real.
 
 ### Windows
 
 - abre uma janela nativa separada;
-- inicializa WebView2 com `CoreWebView2ControllerOptions.IsInPrivateModeEnabled = true`;
-- usa perfil próprio da sessão privada;
-- não passa pela persistência de histórico ou favoritos do aplicativo.
+- inicializa WebView2 com perfil InPrivate;
+- não passa pela persistência de histórico ou favoritos.
 
 ### Android
 
 - disponível a partir do Android 9 (API 28);
-- abre uma Activity dedicada no processo `:private`;
-- chama `WebView.SetDataDirectorySuffix("private")` antes de criar o WebView;
-- o processo privado usa diretório de dados diferente da sessão normal;
-- cookies, armazenamento web, cache, histórico e dados de formulário são limpos ao abrir e ao encerrar;
-- a sessão privada não acessa o `BrowserDataStore` do aplicativo.
+- abre uma Activity dedicada no processo :private;
+- chama WebView.SetDataDirectorySuffix("private") antes de criar o WebView;
+- usa diretório de dados independente e limpa cookies, armazenamento web, cache e histórico ao encerrar;
+- não acessa o BrowserDataStore do aplicativo.
 
-No Android 7 e 8, o recurso fica indisponível porque a API necessária para separar diretórios do WebView não existe. Isso evita apresentar uma falsa sensação de privacidade.
+No Android 7 e 8, o recurso fica indisponível porque a API de isolamento necessária não existe.
+
+## Atualizações
+
+- O aplicativo consulta apenas a última release pública do próprio repositório.
+- Nenhum token pessoal fica embutido no navegador.
+- O pacote da plataforma é selecionado por nome fixo, URL HTTPS e host github.com.
+- O hash SHA-256 informado pela API do GitHub é obrigatório e conferido após o download.
+- O usuário confirma o download antes de instalar.
+- Windows troca os arquivos da pasta portátil depois de encerrar o navegador.
+- Android abre o instalador de sistema para a confirmação final.
+- APKs de todas as versões precisam manter a mesma chave de assinatura.
+
+## Distribuição
+
+O workflow .github/workflows/release.yml gera um ZIP portátil para Windows e um APK assinado para Android em cada tag v*. A chave Android fica apenas nos segredos do GitHub Actions. A consulta do app depende de releases públicas.
 
 ## CI
 
-O workflow completo roda no pull request para `main` ou por execução manual. Ele não roda em cada push da `preview`, reduzindo builds pesados durante ajustes intermediários.
+O workflow completo roda no pull request para main ou por execução manual. Ele não roda em cada push da preview.
 
-Cada alvo instala apenas o workload necessário. O projeto `Navegador.Core` é restaurado separadamente em `net10.0`, e o aplicativo é restaurado sem dependências apenas para o TargetFramework da matriz. No Windows, restore e build usam explicitamente o RID `win-x64`, garantindo que o runtime pack correspondente seja baixado. Isso evita propagar o TargetFramework da plataforma para o Core e evita build sem runtime pack.
+Cada alvo instala apenas o workload necessário. O projeto Navegador.Core é restaurado separadamente em net10.0, e o app é restaurado sem dependências para o TargetFramework da matriz. No Windows, restore e build usam o RID win-x64 para obter o runtime pack correspondente.
 
 ## Regras
 

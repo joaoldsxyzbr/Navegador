@@ -9,16 +9,16 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 - [x] Definir stack e arquitetura inicial.
 - [x] Criar repositório e documentação base.
 - [x] Criar o esqueleto funcional com navegação web.
-- [x] Validar build Windows no GitHub Actions.
-- [x] Validar build Android no GitHub Actions.
-- [x] Implementar abas.
-- [x] Implementar favoritos.
-- [x] Implementar histórico local.
-- [x] Implementar downloads.
-- [x] Implementar modo privado.
-- [ ] Implementar configurações e atualização do navegador.
-- [ ] Preparar distribuição portátil no Windows.
-- [ ] Preparar pacote Android.
+- [x] Validar builds Windows e Android no GitHub Actions.
+- [x] Implementar abas, favoritos e histórico local.
+- [x] Implementar downloads nativos.
+- [x] Implementar modo privado isolado.
+- [x] Criar configurações e consulta de atualização por release do projeto.
+- [x] Preparar fluxo de publicação de ZIP portátil e APK assinado.
+- [ ] Corrigir o build atual do Windows e obter CI final verde.
+- [ ] Cadastrar a chave Android nos segredos do GitHub Actions.
+- [ ] Publicar a primeira release pública assinada.
+- [ ] Validar instalação e atualização nos dispositivos Windows e Android.
 
 ## Escopo do primeiro MVP
 
@@ -31,7 +31,7 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 7. Manter abas, favoritos e histórico local.
 8. Baixar arquivos com integração nativa de cada plataforma.
 9. Oferecer modo privado com isolamento real.
-10. Permitir verificar e aplicar atualizações pelas configurações.
+10. Consultar, validar e aplicar atualizações pelas configurações.
 
 ## Fora do primeiro MVP
 
@@ -41,16 +41,15 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 - Motor próprio.
 - iOS.
 
-## Critérios de aceite do primeiro MVP
+## Critérios de aceite
 
-- Compilar para Windows.
-- Compilar para Android.
-- Navegar em páginas HTTPS.
-- Pesquisa funcionar quando a entrada não for uma URL.
-- Controles básicos responderem sem duplicação de lógica entre plataformas.
+- Compilar para Windows e Android.
+- Navegar em páginas HTTPS e pesquisar texto que não seja URL.
 - Navegação privada não compartilhar cookies, cache ou armazenamento web com a sessão normal.
-- Histórico e favoritos do aplicativo não serem gravados pela sessão privada.
+- Atualizador consultar apenas releases do Navegador.
+- Pacote ser confirmado pelo usuário e validado por SHA-256 antes da instalação.
+- Android manter a mesma chave de assinatura entre versões.
 
 ## Política de validação
 
-O CI completo é propositalmente executado apenas no estado final de uma entrega, por pull request para `main` ou disparo manual. Ajustes intermediários na `preview` devem ser agrupados e revisados antes desse CI.
+O CI completo roda no pull request para main ou por execução manual. Ajustes intermediários na preview devem ser agrupados antes desse CI.
