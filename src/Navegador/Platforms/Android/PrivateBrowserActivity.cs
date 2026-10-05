@@ -2,8 +2,14 @@ using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
-using Android.Widget;
 using Navegador.Core;
+using AndroidButton = Android.Widget.Button;
+using AndroidEditText = Android.Widget.EditText;
+using AndroidLinearLayout = Android.Widget.LinearLayout;
+using AndroidOrientation = Android.Widget.Orientation;
+using AndroidToast = Android.Widget.Toast;
+using AndroidToastLength = Android.Widget.ToastLength;
+using AndroidViewGroup = Android.Views.ViewGroup;
 using AndroidWebView = Android.Webkit.WebView;
 using AndroidWebViewClient = Android.Webkit.WebViewClient;
 using CookieManager = Android.Webkit.CookieManager;
@@ -29,9 +35,9 @@ public sealed class PrivateBrowserActivity : Activity
     private static int _dataDirectoryConfigured;
 
     private AndroidWebView? _browser;
-    private EditText? _address;
-    private Button? _backButton;
-    private Button? _forwardButton;
+    private AndroidEditText? _address;
+    private AndroidButton? _backButton;
+    private AndroidButton? _forwardButton;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -39,10 +45,10 @@ public sealed class PrivateBrowserActivity : Activity
 
         if (Build.VERSION.SdkInt < BuildVersionCodes.P)
         {
-            Toast.MakeText(
+            AndroidToast.MakeText(
                 this,
                 "Modo privado requer Android 9 ou mais recente.",
-                ToastLength.Long)?.Show();
+                AndroidToastLength.Long)?.Show();
             Finish();
             return;
         }
@@ -57,16 +63,16 @@ public sealed class PrivateBrowserActivity : Activity
 
     private void BuildInterface()
     {
-        var root = new LinearLayout(this)
+        var root = new AndroidLinearLayout(this)
         {
-            Orientation = Orientation.Vertical
+            Orientation = AndroidOrientation.Vertical
         };
 
         root.SetPadding(ToPixels(8), ToPixels(8), ToPixels(8), ToPixels(8));
 
-        var toolbar = new LinearLayout(this)
+        var toolbar = new AndroidLinearLayout(this)
         {
-            Orientation = Orientation.Horizontal,
+            Orientation = AndroidOrientation.Horizontal,
             Gravity = GravityFlags.CenterVertical
         };
 
@@ -75,15 +81,15 @@ public sealed class PrivateBrowserActivity : Activity
         var reloadButton = CreateButton("↻", "Atualizar");
         var goButton = CreateButton("Ir", "Ir para o endereço");
 
-        _address = new EditText(this)
+        _address = new AndroidEditText(this)
         {
-            Hint = "Digite um endereço ou pesquise",
-            SingleLine = true
+            Hint = "Digite um endereço ou pesquise"
         };
 
-        _address.LayoutParameters = new LinearLayout.LayoutParams(
+        _address.SetSingleLine(true);
+        _address.LayoutParameters = new AndroidLinearLayout.LayoutParams(
             0,
-            ViewGroup.LayoutParams.WrapContent,
+            AndroidViewGroup.LayoutParams.WrapContent,
             1f);
 
         _backButton.Click += (_, _) =>
@@ -126,14 +132,14 @@ public sealed class PrivateBrowserActivity : Activity
 
         root.AddView(
             toolbar,
-            new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MatchParent,
-                ViewGroup.LayoutParams.WrapContent));
+            new AndroidLinearLayout.LayoutParams(
+                AndroidViewGroup.LayoutParams.MatchParent,
+                AndroidViewGroup.LayoutParams.WrapContent));
 
         root.AddView(
             _browser,
-            new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MatchParent,
+            new AndroidLinearLayout.LayoutParams(
+                AndroidViewGroup.LayoutParams.MatchParent,
                 0,
                 1f));
 
@@ -141,15 +147,15 @@ public sealed class PrivateBrowserActivity : Activity
         UpdateNavigationButtons();
     }
 
-    private Button CreateButton(string text, string description)
+    private AndroidButton CreateButton(string text, string description)
     {
-        var button = new Button(this)
+        var button = new AndroidButton(this)
         {
             Text = text,
-            ContentDescription = description,
-            MinWidth = ToPixels(44)
+            ContentDescription = description
         };
 
+        button.SetMinWidth(ToPixels(44));
         return button;
     }
 
