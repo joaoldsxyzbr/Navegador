@@ -119,23 +119,13 @@ A distribuição Windows será portátil e manterá seu perfil em diretório con
 
 O empacotamento deve apontar o Chromium para esse diretório de dados sem depender de instalação, serviço permanente ou configuração obrigatória no Registro.
 
-Dados protegidos pela criptografia do Windows podem permanecer vinculados ao usuário ou computador de origem; o projeto não deve contornar essa proteção. A sincronização própria será usada para transportar dados entre dispositivos.
+Dados protegidos pela criptografia do Windows podem permanecer vinculados ao usuário ou computador de origem; o projeto não deve contornar essa proteção. Copiar a pasta portátil não garante a reutilização de cookies, senhas ou outros segredos protegidos em outro computador.
 
 ## Sincronização
 
-O Navegador não dependerá do Chrome Sync/Google Sync. Builds derivados de Chromium possuem restrições para login e serviços privados do Chrome, por isso a sincronização será um componente próprio.
+Sincronização entre dispositivos está **fora do escopo atual**.
 
-Arquitetura prevista:
-
-```text
-Windows Navegador ─┐
-                   ├── protocolo de sync próprio ── backend do Navegador
-Android Navegador ─┘
-```
-
-A primeira versão cobre favoritos, abas abertas, histórico e configurações. Senhas, passkeys e autofill exigem uma fase posterior com criptografia ponta a ponta.
-
-O protocolo e o código do backend devem permanecer documentados e versionados neste repositório.
+O projeto não implementará backend, protocolo de sync, conta própria ou integração com Chrome Sync nesta fase. Se esse recurso voltar ao roadmap no futuro, deverá ser tratado como uma decisão arquitetural separada e revisada antes da implementação.
 
 ## Atualização do Chromium
 
