@@ -12,6 +12,7 @@ Transformar o Navegador em uma distribuição Chromium própria, leve de manter,
 - [x] Criar estrutura de args, patches, branding e scripts.
 - [x] Criar validação leve do overlay no CI.
 - [x] Definir que a UI upstream do Chromium será preservada.
+- [x] Adiar sincronização entre dispositivos para fora do escopo atual.
 - [ ] Executar o primeiro checkout completo do Chromium em ambiente de build.
 - [ ] Compilar o target `chrome` sem patches.
 - [ ] Registrar tamanho, duração e requisitos reais do primeiro build.
@@ -39,33 +40,26 @@ Transformar o Navegador em uma distribuição Chromium própria, leve de manter,
 - [ ] Validar abas, downloads, histórico, favoritos, perfis e modo privado.
 - [ ] Criar empacotamento Windows x64.
 
-## Fase 4 — Sincronização
-
-- [ ] Definir protocolo de sincronização próprio.
-- [ ] Escolher infraestrutura do backend.
-- [ ] Implementar identidade de dispositivo e resolução de conflitos.
-- [ ] Sincronizar favoritos.
-- [ ] Sincronizar abas abertas.
-- [ ] Sincronizar histórico.
-- [ ] Sincronizar configurações selecionadas.
-- [ ] Projetar criptografia ponta a ponta antes de sincronizar senhas, passkeys ou autofill.
-
-## Fase 5 — Atualização upstream
+## Fase 4 — Atualização upstream
 
 - [ ] Automatizar teste de reaplicação dos patches.
 - [ ] Criar rotina de atualização da versão Chromium.
 - [ ] Adicionar relatório de patches quebrados.
 - [ ] Definir cadência para atualizações de segurança.
 
-## Fase 6 — Android
+## Fase 5 — Android
 
 - [ ] Definir estratégia de build Chromium Android.
 - [ ] Portar branding, defaults e funções compartilháveis.
 - [ ] Preservar a interface Chromium/Android sempre que aplicável.
 - [ ] Criar empacotamento APK/AAB.
 - [ ] Validar recursos móveis e atualização.
-- [ ] Integrar o cliente Android ao protocolo de sincronização.
-- [ ] Validar sincronização bidirecional Windows ↔ Android.
+
+## Fora do escopo atual
+
+- sincronização Windows ↔ Android;
+- backend de conta/sync;
+- sincronização de favoritos, abas, histórico, configurações, senhas ou passkeys entre dispositivos.
 
 ## Critérios de aceite da fundação
 
