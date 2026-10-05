@@ -1,8 +1,11 @@
 using Microsoft.Maui.Storage;
-using Microsoft.UI.Xaml;
 using Microsoft.Web.WebView2.Core;
 using Navegador.Core;
 using WinUIControls = Microsoft.UI.Xaml.Controls;
+using WinUIGridLength = Microsoft.UI.Xaml.GridLength;
+using WinUIGridUnitType = Microsoft.UI.Xaml.GridUnitType;
+using WinUIThickness = Microsoft.UI.Xaml.Thickness;
+using WinUIWindow = Microsoft.UI.Xaml.Window;
 
 namespace Navegador.Platforms;
 
@@ -30,7 +33,7 @@ internal static class PrivateBrowsingIntegration
         }
     }
 
-    private sealed class PrivateBrowserWindow : Window
+    private sealed class PrivateBrowserWindow : WinUIWindow
     {
         private readonly WinUIControls.WebView2 _browser = new();
         private readonly WinUIControls.TextBox _address = new()
@@ -90,17 +93,17 @@ internal static class PrivateBrowsingIntegration
             var root = new WinUIControls.Grid
             {
                 RowSpacing = 8,
-                Padding = new Thickness(8)
+                Padding = new WinUIThickness(8)
             };
 
             root.RowDefinitions.Add(new WinUIControls.RowDefinition
             {
-                Height = GridLength.Auto
+                Height = WinUIGridLength.Auto
             });
 
             root.RowDefinitions.Add(new WinUIControls.RowDefinition
             {
-                Height = new GridLength(1, GridUnitType.Star)
+                Height = new WinUIGridLength(1, WinUIGridUnitType.Star)
             });
 
             var toolbar = new WinUIControls.Grid
@@ -110,27 +113,27 @@ internal static class PrivateBrowsingIntegration
 
             toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
             {
-                Width = GridLength.Auto
+                Width = WinUIGridLength.Auto
             });
 
             toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
             {
-                Width = GridLength.Auto
+                Width = WinUIGridLength.Auto
             });
 
             toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
             {
-                Width = GridLength.Auto
+                Width = WinUIGridLength.Auto
             });
 
             toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
             {
-                Width = new GridLength(1, GridUnitType.Star)
+                Width = new WinUIGridLength(1, WinUIGridUnitType.Star)
             });
 
             toolbar.ColumnDefinitions.Add(new WinUIControls.ColumnDefinition
             {
-                Width = GridLength.Auto
+                Width = WinUIGridLength.Auto
             });
 
             var reloadButton = new WinUIControls.Button
