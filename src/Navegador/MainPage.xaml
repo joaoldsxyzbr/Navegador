@@ -64,28 +64,35 @@
                 Clicked="OnGoClicked" />
         </Grid>
 
-        <HorizontalStackLayout
+        <ScrollView
             Grid.Row="2"
-            Spacing="8">
+            Orientation="Horizontal"
+            HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    Text="Início"
+                    Clicked="OnHomeClicked" />
 
-            <Button
-                Text="Início"
-                Clicked="OnHomeClicked" />
+                <Button
+                    x:Name="FavoriteButton"
+                    Text="☆"
+                    Clicked="OnFavoriteClicked"
+                    SemanticProperties.Description="Adicionar ou remover favorito" />
 
-            <Button
-                x:Name="FavoriteButton"
-                Text="☆"
-                Clicked="OnFavoriteClicked"
-                SemanticProperties.Description="Adicionar ou remover favorito" />
+                <Button
+                    Text="Favoritos"
+                    Clicked="OnFavoritesClicked" />
 
-            <Button
-                Text="Favoritos"
-                Clicked="OnFavoritesClicked" />
+                <Button
+                    Text="Histórico"
+                    Clicked="OnHistoryClicked" />
 
-            <Button
-                Text="Histórico"
-                Clicked="OnHistoryClicked" />
-        </HorizontalStackLayout>
+                <Button
+                    Text="Privado"
+                    Clicked="OnPrivateClicked"
+                    SemanticProperties.Description="Abrir navegação privada" />
+            </HorizontalStackLayout>
+        </ScrollView>
 
         <Grid
             x:Name="BrowserHost"

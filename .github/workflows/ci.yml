@@ -1,21 +1,23 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-      - preview
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build ${{ matrix.target }}
     runs-on: windows-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -47,10 +49,10 @@ jobs:
         shell: pwsh
         run: dotnet workload install ${{ matrix.workload }}
 
-      - name: Restaurar solução
+      - name: Restaurar
         shell: pwsh
-        run: dotnet restore src/Navegador/Navegador.csproj
+        run: dotnet restore src/Navegador/Navegador.csproj -p:TargetFramework=${{ matrix.target }}
 
       - name: Compilar
         shell: pwsh
-        run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }}
+        run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }} --no-restore

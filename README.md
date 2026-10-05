@@ -21,7 +21,16 @@ Criar um navegador enxuto, rápido e fácil de manter, evitando recursos que nã
 - Abas
 - Página inicial
 - Navegação HTTPS
-- Base para favoritos, histórico, downloads e modo privado
+- Favoritos e histórico local
+- Downloads nativos
+- Modo privado realmente isolado
+- Base para configurações e atualização do navegador
+
+## Modo privado
+
+- Windows: janela separada usando perfil WebView2 em modo InPrivate.
+- Android 9+: atividade em processo separado, com diretório WebView exclusivo e limpeza de cookies, cache e armazenamento ao encerrar.
+- Android 7 e 8: o modo privado fica indisponível para não oferecer um isolamento falso.
 
 ## Plataformas
 
@@ -39,6 +48,10 @@ docs/
 .github/
   workflows/
 ```
+
+## Entrega e CI
+
+O desenvolvimento ocorre em `preview`. O CI pesado não roda a cada push: ele é executado no pull request final para `main` ou manualmente por `workflow_dispatch`.
 
 ## Princípios
 

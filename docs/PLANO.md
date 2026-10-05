@@ -14,8 +14,8 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 - [x] Implementar abas.
 - [x] Implementar favoritos.
 - [x] Implementar histórico local.
-- [ ] Implementar downloads.
-- [ ] Implementar modo privado.
+- [x] Implementar downloads.
+- [x] Implementar modo privado.
 - [ ] Implementar configurações e atualização do navegador.
 - [ ] Preparar distribuição portátil no Windows.
 - [ ] Preparar pacote Android.
@@ -48,3 +48,9 @@ Entregar um navegador leve para Windows e Android, com uma base compartilhada e 
 - Navegar em páginas HTTPS.
 - Pesquisa funcionar quando a entrada não for uma URL.
 - Controles básicos responderem sem duplicação de lógica entre plataformas.
+- Navegação privada não compartilhar cookies, cache ou armazenamento web com a sessão normal.
+- Histórico e favoritos do aplicativo não serem gravados pela sessão privada.
+
+## Política de validação
+
+O CI completo é propositalmente executado apenas no estado final de uma entrega, por pull request para `main` ou disparo manual. Ajustes intermediários na `preview` devem ser agrupados e revisados antes desse CI.

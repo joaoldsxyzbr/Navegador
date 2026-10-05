@@ -110,6 +110,25 @@ public partial class MainPage : ContentPage
             Navigate(visibleHistory[index].Url);
     }
 
+    private async void OnPrivateClicked(object? sender, EventArgs e)
+    {
+        try
+        {
+            await Platforms.PrivateBrowsingIntegration.OpenAsync();
+        }
+        catch (PlatformNotSupportedException ex)
+        {
+            await DisplayAlertAsync("Modo privado", ex.Message, "OK");
+        }
+        catch (Exception)
+        {
+            await DisplayAlertAsync(
+                "Modo privado",
+                "Não foi possível abrir a navegação privada.",
+                "OK");
+        }
+    }
+
     private async void OnBrowserNavigated(object? sender, WebNavigatedEventArgs e)
     {
         if (sender is not WebView browser)
