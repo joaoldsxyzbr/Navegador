@@ -7,6 +7,20 @@
 - A v0.1.0 ainda empacota um snapshot oficial do Chromium. Ela valida o launcher, o perfil portátil, o atualizador separado e a publicação; **não** valida o build completo do overlay.
 - O build integral está bloqueado porque não há um ambiente de build Windows disponível. Até existir um ambiente autorizado e compatível, o trabalho continua sobre o bootstrap v0.1.0 e tarefas que não exigem compilar o Chromium inteiro.
 
+## Fluxo viável enquanto não há runner de build
+
+1. Fixar uma revisão oficial do Chromium em `bootstrap/SNAPSHOT_REVISION`.
+2. No GitHub Actions, baixar esse snapshot, compilar o launcher e o atualizador, montar o pacote portátil e executar smoke test e validações do pacote.
+3. Publicar a release somente se todos os passos passarem; gerar o manifesto de atualização e o SHA-256 no mesmo fluxo.
+4. Fazer melhorias que cabem no overlay leve (launcher, atualizador, empacotamento, testes e documentação). Mudanças internas de UI, branding ou comportamento do Chromium aguardam o build próprio.
+5. Atualizar intencionalmente a revisão upstream e a versão Navegador; não acompanhar snapshots automaticamente sem validação.
+
+Esse é o fluxo que conseguimos sustentar agora e mantém um download oficial do Chromium verificável. Ele não transforma o snapshot em um build próprio nem permite alterar o executável interno do Chromium.
+
+## Quando houver ambiente de build
+
+Retomar o modelo completo upstream + overlay: obter a fonte Chromium, aplicar patches/configurações versionados, compilar e empacotar. Fazer isso apenas em um Windows autorizado com espaço livre compatível ou runner maior já disponível e aprovado. O workflow pesado deve ser separado do CI leve e só publicar depois dos mesmos testes de pacote e atualização.
+
 ## Objetivo
 
 Transformar o Navegador em uma distribuição Chromium própria, leve de manter, com delta mínimo em relação ao upstream e **interface visual preservada do Chromium**.
