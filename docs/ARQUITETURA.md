@@ -1,170 +1,47 @@
 # Arquitetura
 
-## Decisão principal
+## Decisão
 
-O Navegador é uma distribuição própria baseada em **Chromium upstream + overlay versionado**.
+A nova base do Navegador será **Firefox upstream (Gecko) + personalização da interface**. O usuário decidiu em 05/10/2026 trocar Chromium por Firefox e manter como referência visual a organização do Chrome.
 
-A antiga aplicação .NET MAUI/WebView foi removida da `main`. O projeto não usa mais WebView2 como fundação do produto.
+A release v0.1.0 continua sendo o bootstrap Chromium já publicado. A troca de motor exige tratar essa versão como uma linha histórica separada.
 
-## Objetivo arquitetural
+## Objetivo
 
-Ter um navegador Chromium próprio sem manter um fork profundo do motor e **sem criar uma interface paralela ao Chromium**.
+Ter uma distribuição Firefox própria com interface desktop familiar ao Chrome, tema escuro, pacote portátil Windows e atualizador. Não é necessário alterar o motor Gecko para trabalhar no visual e em recursos de interface.
 
-```text
-Chromium upstream limpo
-        +
-configuração
-        +
-patches funcionais pequenos
-        +
-branding mínimo
-        ↓
-Navegador
-```
+## Desktop
 
-## Regra de interface
+A interface do Firefox usa HTML, CSS e JavaScript, então a adaptação visual pode começar na camada de frontend. O primeiro protótipo deve cobrir:
 
-A UI do Chromium é a base visual oficial do Navegador.
+- faixa de abas horizontal no topo;
+- barra de endereço e navegação;
+- botões/toolbar e menu principal;
+- tema escuro;
+- páginas nativas mais usadas, conforme a viabilidade.
 
-Por padrão, não serão redesenhados:
+O objetivo é preservar o comportamento e a acessibilidade do Firefox enquanto aproximamos sua composição visual do Chrome. “Manter o visual” é critério de comparação do protótipo; não presumimos equivalência pixel a pixel antes de validar.
 
-- barra de abas;
-- omnibox/barra de endereço;
-- barra de ferramentas;
-- menus;
-- página de downloads;
-- histórico;
-- favoritos;
-- configurações;
-- DevTools;
-- demais superfícies já fornecidas pelo Chromium.
+O Artifact Mode do Firefox baixa componentes C++ pré-compilados e suporta mudanças de frontend como JavaScript, XHTML/HTML, CSS e strings/FTL. Ele não suporta modificar código C, C++ ou Rust. Assim, é um caminho para prototipar a interface sem recompilar o motor; não é uma forma de alterar o engine. Veja [Firefox Artifact Builds](https://firefox-source-docs.mozilla.org/contributing/build/artifact_builds.html).
 
-Novas funções devem, sempre que possível, ser integradas usando componentes, comandos, menus, páginas e padrões já existentes no Chromium.
+## Android
 
-Uma alteração visual só é aceitável quando:
+Android será baseado em GeckoView, a biblioteca de engine da Mozilla indicada para apps e navegadores. A UI do Firefox desktop não é reaproveitada: o Navegador Android terá shell nativo separado, usando a linguagem visual Chrome Android como referência. O início dessa plataforma depende do protótipo desktop e da estratégia de distribuição GeckoView.
 
-1. for necessária para expor uma função nova;
-2. reutilizar o design system e componentes do Chromium;
-3. permanecer pequena e isolada;
-4. não exigir manter um fork visual independente.
+## Distribuição e perfil
 
-Trocar nome, ícone, identificadores do produto e diretórios próprios é considerado **branding mínimo**, não redesign.
+- Windows deve continuar portátil, sem exigir instalação para o uso normal.
+- O perfil deve ficar em diretório controlado pelo Navegador, como `Data/`.
+- O atualizador deve verificar HTTPS e SHA-256, preservar os dados e permitir rollback.
+- O pacote Firefox deverá ser definido e validado antes de adaptar launcher/atualizador; não assumir que o layout do Chromium (`App/chrome.exe`) continuará válido.
+- Perfis Chromium e Firefox não são intercambiáveis. A migração entre motores não deve substituir a v0.1.0 nem apagar seus dados; publicar uma linha Firefox separada no primeiro ciclo.
 
-## Fonte de verdade
+## Compilação
 
-O repositório `joaoldsxyzbr/Navegador` contém somente o que diferencia o Navegador do Chromium e tudo que torna o build reproduzível.
+O modo Artifact reduz a compilação local quando as mudanças ficam no frontend, baixando os componentes nativos prontos. A documentação Firefox para Windows indica 40 GB de espaço livre, 4 GB de RAM mínimos e 8 GB ou mais recomendados. Runner padrão do GitHub com 14 GB de SSD é insuficiente; usar máquina/runner compatível e autorizado para a preparação do checkout.
 
-O código completo do Chromium é obtido externamente durante a preparação do ambiente e nunca deve ser commitado aqui.
+Build completo do Gecko só será necessário se uma função exigir mudança de código nativo do motor. O escopo inicial do Navegador não exige esse tipo de mudança.
 
-## Componentes
+## Histórico Chromium
 
-### chromium/VERSION
-
-Fixa exatamente a versão upstream usada pelo projeto. Atualizar Chromium é uma mudança explícita e revisável.
-
-### chromium/args
-
-Argumentos GN próprios por plataforma e perfil de build.
-
-### chromium/patches
-
-Patches ordenados e reaplicáveis. `series` define a ordem oficial.
-
-Regras:
-
-- um objetivo por patch;
-- nomes numerados;
-- priorizar recursos e comportamento, não customização visual;
-- evitar refatorações upstream desnecessárias;
-- patch que não reaplica bloqueia a atualização até ser corrigido ou removido.
-
-### chromium/branding
-
-Somente identidade essencial do Navegador, como nome, ícones e identificadores. Não é uma camada de interface própria.
-
-### chromium/scripts
-
-Automação de preparação, validação e build. Os scripts devem operar sobre um checkout externo e nunca depender de uma cópia vendorizada do Chromium no Git.
-
-## Plataforma
-
-### Windows
-
-É a primeira plataforma da nova arquitetura. O objetivo inicial é produzir um executável Chromium funcional e depois adicionar branding mínimo, defaults e recursos próprios sem alterar a experiência visual base.
-
-### Android
-
-Continua no escopo do produto, mas só entra depois que a receita Chromium para Windows estiver reproduzível. Isso reduz duas frentes pesadas de build ao mesmo tempo.
-
-## Estratégia de customização
-
-Ordem de preferência:
-
-1. recurso já existente no Chromium;
-2. preferência/default suportado;
-3. argumento GN ou configuração;
-4. extensão funcional pequena usando componentes nativos;
-5. patch funcional isolado;
-6. alteração maior somente quando houver benefício claro.
-
-A regra é manter o delta para o upstream pequeno e evitar um fork de UI.
-
-## Tema
-
-O tema escuro é o padrão inicial do Navegador, usando a implementação nativa do Chromium. O usuário poderá alternar entre Escuro, Claro e Sistema. Isso é configuração do produto, não um fork visual.
-
-## Portabilidade Windows
-
-A distribuição Windows será portátil e manterá seu perfil em diretório controlado pelo próprio pacote, preferencialmente `Data/` ao lado do executável.
-
-O empacotamento deve apontar o Chromium para esse diretório de dados sem depender de instalação, serviço permanente ou configuração obrigatória no Registro.
-
-Dados protegidos pela criptografia do Windows podem permanecer vinculados ao usuário ou computador de origem; o projeto não deve contornar essa proteção. Copiar a pasta portátil não garante a reutilização de cookies, senhas ou outros segredos protegidos em outro computador.
-
-## Atualização do aplicativo
-
-O Windows portátil usa uma camada própria e pequena ao redor do Chromium:
-
-- Navegador.exe inicia App/chrome.exe apontando o perfil para Data/;
-- Atualizar Navegador.exe consulta o manifesto da release mais recente;
-- o pacote é aceito somente após validação SHA-256;
-- Updater/apply-update.ps1 substitui o conjunto gerenciado e preserva Data/;
-- um backup temporário permite rollback se a troca falhar.
-
-Na primeira versão testável, o atualizador fica separado da UI do Chromium. Quando o build próprio estiver disponível, um patch pequeno poderá ligar o mesmo fluxo à página Sobre o Navegador.
-
-### Bootstrap v0.1.0
-
-A v0.1.0 usa temporariamente um snapshot oficial do Chromium em App/. Isso permite validar portabilidade e atualização sem fingir que o build integral do overlay já ocorreu. O snapshot é fixado no repositório e será removido quando houver infraestrutura adequada para o build completo.
-
-## Sincronização
-
-Sincronização entre dispositivos está **fora do escopo atual**.
-
-O projeto não implementará backend, protocolo de sync, conta própria ou integração com Chrome Sync nesta fase. Se esse recurso voltar ao roadmap no futuro, deverá ser tratado como uma decisão arquitetural separada e revisada antes da implementação.
-
-## Atualização do Chromium
-
-Uma atualização segue este ciclo:
-
-1. escolher uma versão upstream;
-2. atualizar `chromium/VERSION`;
-3. preparar uma árvore limpa;
-4. aplicar `chromium/patches/series`;
-5. corrigir somente patches incompatíveis;
-6. gerar o build;
-7. executar testes;
-8. registrar incompatibilidades e decisões.
-
-## CI
-
-O CI comum valida o overlay, a versão, a lista de patches e a ausência do antigo projeto MAUI.
-
-O build integral do Chromium não roda no CI leve porque checkout e compilação são caros em disco e tempo. Ele terá workflow dedicado quando a infraestrutura de build estiver definida.
-
-## Segurança
-
-- Chromium deve permanecer próximo da versão estável suportada.
-- Nenhuma chave ou token deve entrar em patches, scripts ou argumentos.
-- Patches que alterem sandbox, isolamento de processos, TLS, permissões ou segurança exigem revisão específica.
-- Recursos Google não devem ser habilitados por segredo embutido no binário.
+O código e o pacote Chromium da v0.1.0 ficam preservados enquanto a migração Firefox é prototipada. Os detalhes anteriores estão em [CHROMIUM.md](CHROMIUM.md); não tratar seus scripts como arquitetura atual.

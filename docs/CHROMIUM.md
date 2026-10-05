@@ -1,104 +1,13 @@
-# Ambiente Chromium
+# Histórico Chromium — v0.1.0
 
-## Visão geral
+Este documento descreve a arquitetura anterior e permanece para reproduzir a release histórica v0.1.0. A nova linha de desenvolvimento migrou para Firefox/Gecko conforme [ARQUITETURA.md](ARQUITETURA.md).
 
-O repositório guarda o overlay do Navegador. O checkout completo do Chromium fica em um diretório externo e nunca deve ser commitado.
+## Estado histórico
 
-A versão do overlay está em `chromium/VERSION`. A v0.1.0 publicada usa um snapshot oficial de bootstrap; ela não substitui o build próprio descrito neste documento.
+- A v0.1.0 usa um snapshot oficial Chromium para Windows x64.
+- O launcher, perfil portátil, atualizador separado e publicação foram validados; o usuário confirmou que o navegador inicia.
+- O build completo de Chromium não foi realizado.
+- A estrutura `chromium/` e workflows associados só devem ser removidos depois que o protótipo Firefox e um pacote Firefox tiverem sido validados.
+- Não usar esses scripts como caminho de build da nova linha Firefox.
 
-## Fluxo atual: bootstrap
-
-Enquanto não houver ambiente de build completo, o workflow `.github/workflows/release.yml` executa o fluxo leve:
-
-1. lê a versão do Navegador e a revisão oficial fixada em `bootstrap/SNAPSHOT_REVISION`;
-2. baixa o snapshot Chromium Windows x64;
-3. compila o launcher e o atualizador;
-4. empacota os binários e o perfil portátil;
-5. inicia Chromium em modo headless e verifica que o endpoint local DevTools respondeu;
-6. reabre o ZIP, valida arquivos/versão/hash e publica a release com manifesto.
-
-Isso confirma que o pacote pode ser montado e que Chromium inicia no runner. A revisão upstream é binária: não aplicamos nossos patches dentro de `chrome.exe`. Por isso, esse fluxo não valida identidade própria, tema escuro padrão ou alterações internas do navegador. Mudanças no launcher e no atualizador podem seguir nesse CI; mudanças internas no Chromium dependem da compilação completa.
-
-A revisão deve continuar fixada e só deve avançar junto de uma versão do Navegador depois de validar segurança, inicialização e atualização. O release workflow é disparado pelo arquivo `release/REQUEST` ou manualmente.
-
-## Requisitos para o primeiro build Windows
-
-A documentação oficial do Chromium para Windows, consultada em 05/10/2026, indica:
-
-- Windows 10 ou superior, máquina x64 e volume NTFS;
-- pelo menos **100 GB livres**;
-- 8 GB de RAM como mínimo e mais de 16 GB recomendado;
-- Visual Studio 2026 com os componentes Desktop development with C++ e MFC/ATL;
-- Windows 11 SDK e `depot_tools`.
-
-Para desempenho, a documentação recomenda SSD rápido, muitos núcleos (20 ou mais não é excessivo) e bastante memória (64 GB não é excessivo). O primeiro build deve registrar os recursos e o tempo observados, sem assumir que o perfil recomendado seja obrigatório.
-
-Referência oficial: [Checking out and Building Chromium for Windows](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/windows_build_instructions.md).
-
-## Escolha do ambiente
-
-O CI comum usa runners padrão e valida apenas o overlay e as ferramentas pequenas; ele não faz checkout nem build completo.
-
-Opções a avaliar antes de iniciar o primeiro build:
-
-1. **Runner próprio Windows**, somente em equipamento autorizado, com os requisitos acima. Se for equipamento gerenciado pelo trabalho, a instalação do runner precisa estar permitida pela organização responsável.
-2. **GitHub-hosted larger runner** Windows, se disponível para a conta e repositório. A documentação atual limita esses runners a organizações/empresas no GitHub Team ou Enterprise Cloud; eles são cobrados por minuto. Confirmar plano, runner disponível, espaço livre real e custo antes de alterar o workflow.
-
-A menor configuração Windows publicada pelo GitHub para larger runners informa 150 GB de armazenamento. Isso não comprova que haverá 100 GB livres após a imagem do sistema; verificar o espaço disponível no início do job. Não configurar um runner faturável sem aprovação explícita do custo.
-
-A escolha e a preparação do ambiente estão acompanhadas na [issue #8](https://github.com/joaoldsxyzbr/Navegador/issues/8).
-
-Status em 05/10/2026: ainda não há ambiente de build integral disponível. O runner padrão público do GitHub documenta 14 GB de SSD, abaixo dos 100 GB livres exigidos pelo Chromium. Portanto, manter a v0.1.0 bootstrap como base testável e não encaminhar o build completo aos runners padrão.
-
-## Pré-requisitos no Windows
-
-Use a documentação oficial do Chromium como referência para Visual Studio, Windows SDK, Git e `depot_tools`. Mantenha `depot_tools` no início do `PATH`, conforme as instruções atuais do Chromium. O caminho do checkout deve ser curto e sem espaços; mantenha a árvore em disco rápido e evite que a máquina durma durante checkout/build.
-
-## Preparar a árvore
-
-No PowerShell, a partir do repositório do Navegador:
-
-```powershell
-./chromium/scripts/prepare-windows.ps1 -Workspace C:\src\navegador-chromium
-```
-
-O script:
-
-1. cria/usa o workspace externo;
-2. executa `fetch chromium --no-history` quando necessário;
-3. posiciona `src` na versão de `chromium/VERSION`;
-4. sincroniza dependências com `gclient sync`;
-5. aplica os patches listados em `chromium/patches/series`.
-
-O script recusa uma árvore upstream com alterações locais antes de trocar a versão.
-
-## Compilar
-
-Depois da preparação:
-
-```powershell
-./chromium/scripts/build-windows.ps1 -Workspace C:\src\navegador-chromium
-```
-
-O build usa `chromium/args/windows-release.gn`, gera `out/Navegador` e compila o target `chrome`.
-
-No primeiro estágio o binário ainda é uma base Chromium. Branding e diferenças funcionais entram progressivamente por patches.
-
-## Patches
-
-Adicione o arquivo em `chromium/patches/` e inclua o nome em `chromium/patches/series`.
-
-Exemplo:
-
-```text
-0001-branding-name.patch
-0002-default-search.patch
-```
-
-A ordem em `series` é a ordem de aplicação.
-
-## Atualizar upstream
-
-Troque somente `chromium/VERSION` primeiro e rode a preparação novamente em uma árvore limpa. Se um patch falhar, corrija aquele patch antes de avançar.
-
-Nunca resolva conflito editando silenciosamente a árvore externa e deixando o repositório desatualizado: toda diferença permanente precisa voltar para o overlay no GitHub.
+Veja [FIREFOX.md](FIREFOX.md) para arquitetura, Artifact Mode, interface Chrome-like e GeckoView.

@@ -1,83 +1,40 @@
 # Requisitos do produto
 
-Este documento registra requisitos funcionais e de distribuição já aprovados para o Navegador.
+Este documento registra os requisitos aprovados para a nova linha Firefox do Navegador.
 
-## Interface
+## Base e aparência
 
-A interface visual deve permanecer próxima do Chromium upstream. O projeto não terá um redesign próprio de abas, omnibox, menus ou configurações.
+- Base desktop: Firefox/Gecko.
+- Base Android: GeckoView.
+- A interface desktop deve manter a familiaridade visual do Chrome: abas na parte superior, barra de endereço/ações e menu em posição familiar.
+- A aproximação será validada por protótipo; não exigir equivalência pixel a pixel antes de medir o custo e a compatibilidade.
+- Tema escuro como padrão, com Claro/Escuro/Sistema quando suportado pela implementação.
+- Preservar comportamento, acessibilidade e recursos nativos Firefox sempre que possível.
 
-### Tema escuro
+## Windows portátil
 
-- O Navegador inicia em **tema escuro por padrão**.
-- O tema deve usar o suporte visual nativo do Chromium.
-- O usuário poderá escolher entre:
-  - Escuro;
-  - Claro;
-  - Sistema.
-- A implementação não deve criar um tema paralelo nem substituir componentes nativos sem necessidade.
-
-## Portabilidade no Windows
-
-A distribuição Windows deve ser portátil.
-
-Critérios:
-
-- fornecida como ZIP/pasta executável;
-- não exigir instalador;
-- não exigir privilégios administrativos para uso normal;
-- não depender de serviço permanente do Windows;
-- não depender de entradas obrigatórias no Registro para funcionar;
-- armazenar o perfil local em uma pasta controlada pelo Navegador, preferencialmente `Data/` ao lado do executável;
-- poder ser copiada ou movida como uma unidade.
-
-O Chromium suporta sobrescrever o diretório de dados do usuário por `--user-data-dir`. O launcher/empacotamento do Navegador deve usar esse mecanismo ou integração equivalente.
-
-### Limite de portabilidade de credenciais
-
-Dados protegidos pelas APIs criptográficas do sistema operacional podem ficar vinculados ao usuário ou computador Windows. Portanto, mover a pasta não garante que sessões, cookies, senhas ou outros segredos protegidos pelo SO funcionem em outro computador.
-
-O Navegador não tentará contornar essas proteções do sistema operacional.
-
-## Atualizações
-
-A distribuição Windows deve permitir atualização sem baixar e substituir manualmente a pasta.
-
-Requisitos atuais:
-
-- um executável próprio deve oferecer a ação Verificar atualizações;
-- o pacote deve ser baixado por HTTPS;
-- o SHA-256 publicado deve ser validado antes da instalação;
-- Data/ nunca deve ser substituída pelo atualizador;
-- falhas durante a troca devem restaurar a versão anterior;
-- a primeira implementação usa pacote completo; atualização diferencial poderá ser adicionada depois;
-- não deve existir serviço residente obrigatório para manter o caráter portátil.
-
-A integração desse fluxo à página Sobre o Navegador fica para a fase em que o Chromium próprio estiver sendo compilado.
-
-## Sincronização
-
-Sincronização entre Windows e Android fica **fora do escopo atual**.
-
-Nesta fase:
-
-- não haverá conta do Navegador;
-- não haverá backend de sincronização;
-- não haverá sincronização de favoritos, abas, histórico ou configurações;
-- não haverá sincronização própria de senhas, passkeys ou autofill;
-- não haverá dependência de Chrome Sync/Google Sync.
-
-Esse recurso poderá ser reavaliado no futuro como uma iniciativa separada.
+- Distribuição ZIP/pasta executável, sem instalador obrigatório para uso comum.
+- Não exigir privilégios administrativos nem serviço residente para navegar.
+- Perfil local em pasta controlada pelo Navegador, preferencialmente `Data/`.
+- Atualizador via HTTPS, validação SHA-256, preservação de Data/ e rollback.
+- Definir e testar o empacotamento Firefox antes de migrar launcher e atualizador.
+- A versão v0.1.0 Chromium permanece numa linha histórica. Não substituir automaticamente um perfil Chromium por Firefox nem declarar que os dados serão migrados.
 
 ## Android
 
-No Android, “portátil” não significa executar sem instalação. O app será instalado normalmente pelo sistema.
+- O app será instalado pelo Android; “portátil” refere-se ao Windows.
+- GeckoView será o engine, com UI própria do app.
+- Validar abas, navegação, janela privada, downloads, tema escuro e atualização antes de considerar a plataforma pronta.
 
-## Prioridades
+## Sincronização
 
-1. Primeiro build Chromium reproduzível no Windows.
-2. Tema escuro padrão.
-3. Empacotamento portátil Windows.
-4. Identidade mínima do Navegador.
-5. Funções próprias mantendo a interface Chromium.
-6. Atualização do Chromium.
-7. Android.
+Sincronização entre Windows e Android continua fora do escopo atual: sem conta própria, backend ou sincronização de favoritos, abas, histórico, configurações, senhas ou passkeys.
+
+## Fases
+
+1. protótipo Firefox desktop com aparência Chrome-like via Artifact Mode;
+2. validar interface e custo de build;
+3. adaptar pacote portátil e atualizador para Firefox, mantendo v0.1.0 intacta;
+4. estabilizar defaults, modo escuro, branding, downloads e janela privada;
+5. protótipo Android GeckoView com shell separado;
+6. reavaliar sincronização somente como iniciativa futura.

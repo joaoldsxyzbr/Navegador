@@ -1,102 +1,32 @@
 # Navegador
 
-Navegador simples e leve construído como uma distribuição própria do Chromium.
+Navegador é um projeto de navegador baseado no Firefox, com a interface de desktop adaptada para manter a familiaridade visual do Chrome.
 
-## Estratégia
+## Direção atual
 
-O projeto segue um modelo de overlay inspirado em distribuições que mantêm o motor upstream quase intacto:
+- Motor: Gecko, da família Firefox.
+- Desktop: personalizar a interface upstream do Firefox com HTML, CSS e JavaScript para aproximá-la da organização visual do Chrome.
+- Android: usar GeckoView como motor; a interface do app será um shell próprio e separado da interface desktop.
+- Distribuição Windows: portátil, com perfil local e atualizador próprio.
+- Sincronização Windows ↔ Android: fora do escopo atual.
 
-- Chromium upstream não é copiado para este repositório;
-- a versão base fica fixada em `chromium/VERSION`;
-- configurações de build ficam em `chromium/args/`;
-- alterações próprias entram como patches pequenos e numerados em `chromium/patches/`;
-- branding mínimo e recursos próprios ficam em `chromium/branding/`;
-- scripts em `chromium/scripts/` preparam e compilam uma árvore Chromium externa.
+A interface Chrome-like é um requisito visual. O primeiro passo é criar um protótipo e validar abas, barra de endereço, toolbar e menus antes de assumir que a aproximação está pronta. Não pretendemos alterar o motor Gecko para reproduzir o visual.
 
-A fonte de verdade do Navegador é este repositório. O checkout completo do Chromium é apenas material de build e não deve ser commitado.
+## Build mais leve
 
-## Direção do produto
+A documentação oficial do Firefox informa 40 GB livres e 4 GB de RAM como mínimo para build no Windows, com 8 GB ou mais recomendado. O Artifact Mode baixa componentes nativos já compilados e permite trabalhar na interface web do Firefox sem recompilar C++/Rust; mudanças no motor continuam fora desse modo.
 
-O Navegador **não pretende redesenhar a interface do Chromium**.
+- [Build do Firefox no Windows](https://firefox-source-docs.mozilla.org/setup/windows_build.html)
+- [Firefox Artifact Builds e limitações](https://firefox-source-docs.mozilla.org/contributing/build/artifact_builds.html)
+- [Arquitetura da interface Firefox](https://firefox-source-docs.mozilla.org/browser/overview.html)
+- [GeckoView para Android](https://firefox-source-docs.mozilla.org/mobile/android/geckoview/index.html)
 
-A interface upstream deve ser preservada sempre que possível:
+O runner padrão do GitHub não tem espaço suficiente para essa preparação. A etapa de protótipo deve rodar em máquina Windows que atenda ao espaço livre ou em runner maior disponível e autorizado.
 
-- abas, barra de endereço, menus e páginas de configurações seguem o Chromium;
-- novos recursos devem usar padrões e componentes nativos do Chromium;
-- mudanças visuais só entram quando forem indispensáveis para uma função nova;
-- nome, ícone e identificadores próprios são branding, não um fork visual da interface.
+## Versão histórica
 
-O diferencial do Navegador será principalmente **funcional**, por meio de novos recursos, configurações, integrações e defaults.
+A release **v0.1.0** foi publicada com um snapshot Chromium e continuará sendo identificada como bootstrap histórico. Ela não é baseada em Firefox. A migração para Gecko terá pacote/canal próprio; o atualizador não deve substituir um perfil Chromium por Firefox nem prometer migração de dados entre motores.
 
-## Requisitos principais
+## Plano
 
-- tema escuro nativo do Chromium por padrão, com opção Claro/Escuro/Sistema;
-- distribuição Windows portátil, sem instalador e com perfil local junto do aplicativo;
-- atualizador próprio com verificação, download, SHA-256, preservação de Data/ e rollback;
-- interface visual próxima do Chromium upstream;
-- Android continua no roadmap depois da base Windows estar reproduzível;
-- sincronização entre dispositivos fica **fora do escopo atual**.
-
-A primeira versão Chromium do projeto é a **v0.1.0**. Até existir um ambiente capaz de compilar o Chromium completo, o pacote testável usa um snapshot oficial fixado como bootstrap. Essa limitação está documentada em `bootstrap/README.md`.
-
-Os detalhes ficam em `docs/REQUISITOS.md`.
-
-## Base atual
-
-- Chromium: **154.0.8037.92**
-- Plataforma inicial da nova arquitetura: **Windows x64**
-- Android: fase seguinte, depois que o fluxo desktop estiver reproduzível
-
-## Estrutura
-
-```text
-chromium/
-  VERSION
-  args/
-  branding/
-  patches/
-  scripts/
-docs/
-  ARQUITETURA.md
-  CHROMIUM.md
-  PLANO.md
-  REQUISITOS.md
-  ATUALIZACOES.md
-.github/
-  workflows/
-```
-
-## Fluxo
-
-```text
-Chromium upstream
-      +
-args de build
-      +
-patches funcionais do Navegador
-      +
-branding mínimo
-      ↓
-Navegador
-```
-
-## Validação rápida
-
-No PowerShell:
-
-```powershell
-./chromium/scripts/verify.ps1
-```
-
-Para preparar uma árvore externa do Chromium, instale `depot_tools` e siga `docs/CHROMIUM.md`.
-
-## Princípios
-
-1. Preservar a interface nativa do Chromium.
-2. Alterar o mínimo possível no upstream.
-3. Preferir configuração antes de patch.
-4. Preferir patch funcional isolado antes de alteração ampla.
-5. Manter cada patch documentado e reaplicável.
-6. Atualizações de segurança do upstream têm prioridade.
-7. Não versionar o checkout nem artefatos de build do Chromium.
-8. GitHub é a fonte de verdade do projeto.
+Veja [docs/PLANO.md](docs/PLANO.md), [docs/ARQUITETURA.md](docs/ARQUITETURA.md) e [docs/FIREFOX.md](docs/FIREFOX.md). O antigo build Chromium está documentado em [docs/CHROMIUM.md](docs/CHROMIUM.md) como histórico da v0.1.0.
