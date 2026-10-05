@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - "release/v*"
   workflow_dispatch:
     inputs:
       tag:
@@ -46,6 +48,7 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ inputs.tag || github.ref_name }}"
+          $tag = $tag -replace "^release/", ""
           $version = $tag.TrimStart("v")
           $publishArgs = @(
             "publish",
@@ -123,6 +126,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           $tag = "${{ inputs.tag || github.ref_name }}"
+          $tag = $tag -replace "^release/", ""
           $version = $tag.TrimStart("v")
           $publishArgs = @(
             "publish",
@@ -170,6 +174,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
+          RELEASE_TAG="${RELEASE_TAG#release/}"
           windows_zip="release-assets/Navegador-windows-x64/Navegador-windows-x64.zip"
           android_apk="release-assets/Navegador-android/Navegador-android.apk"
 
@@ -179,7 +184,7 @@ jobs:
               gh release upload "$RELEASE_TAG" "$android_apk" --clobber
             fi
           elif [[ -f "$android_apk" ]]; then
-            gh release create "$RELEASE_TAG" "$windows_zip" "$android_apk" --generate-notes --verify-tag
+            gh release create "$RELEASE_TAG" "$windows_zip" "$android_apk" --generate-notes --target main
           else
-            gh release create "$RELEASE_TAG" "$windows_zip" --generate-notes --verify-tag
+            gh release create "$RELEASE_TAG" "$windows_zip" --generate-notes --target main
           fi
