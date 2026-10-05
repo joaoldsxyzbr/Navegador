@@ -1,27 +1,33 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-      - preview
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build ${{ matrix.target }}
     runs-on: windows-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - net10.0-windows10.0.19041.0
-          - net10.0-android
+        include:
+          - target: net10.0-windows10.0.19041.0
+            workload: maui-windows
+            java: false
+          - target: net10.0-android
+            workload: maui-android
+            java: true
 
     steps:
       - name: Checkout
@@ -33,20 +39,36 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Configurar Java 21
-        if: contains(matrix.target, 'android')
+        if: matrix.java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
-      - name: Instalar workload MAUI
+      - name: Instalar workload
         shell: pwsh
-        run: dotnet workload install maui
+        run: dotnet workload install ${{ matrix.workload }}
 
-      - name: Restaurar
+      - name: Restaurar Core
         shell: pwsh
-        run: dotnet restore src/Navegador/Navegador.csproj -p:TargetFramework=${{ matrix.target }}
+        run: dotnet restore src/Navegador.Core/Navegador.Core.csproj
 
-      - name: Compilar
+      - name: Restaurar aplicativo Windows
+        if: contains(matrix.target, 'windows')
+        shell: pwsh
+        run: dotnet restore src/Navegador/Navegador.csproj --no-dependencies -p:TargetFramework=${{ matrix.target }} -r win-x64
+
+      - name: Restaurar aplicativo Android
+        if: contains(matrix.target, 'android')
+        shell: pwsh
+        run: dotnet restore src/Navegador/Navegador.csproj --no-dependencies -p:TargetFramework=${{ matrix.target }}
+
+      - name: Compilar Windows
+        if: contains(matrix.target, 'windows')
+        shell: pwsh
+        run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }} -r win-x64 --no-restore
+
+      - name: Compilar Android
+        if: contains(matrix.target, 'android')
         shell: pwsh
         run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }} --no-restore
