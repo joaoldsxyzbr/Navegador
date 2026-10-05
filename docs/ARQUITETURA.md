@@ -95,7 +95,7 @@ No Android 7 e 8, o recurso fica indisponível porque a API necessária para sep
 
 O workflow completo roda no pull request para `main` ou por execução manual. Ele não roda em cada push da `preview`, reduzindo builds pesados durante ajustes intermediários.
 
-Cada alvo instala apenas o workload necessário. O projeto `Navegador.Core` é restaurado separadamente em `net10.0`, e o aplicativo é restaurado sem dependências apenas para o TargetFramework da matriz. Isso evita que o TargetFramework específico de plataforma seja propagado incorretamente para o Core.
+Cada alvo instala apenas o workload necessário. O projeto `Navegador.Core` é restaurado separadamente em `net10.0`, e o aplicativo é restaurado sem dependências apenas para o TargetFramework da matriz. No Windows, restore e build usam explicitamente o RID `win-x64`, garantindo que o runtime pack correspondente seja baixado. Isso evita propagar o TargetFramework da plataforma para o Core e evita build sem runtime pack.
 
 ## Regras
 

@@ -72,9 +72,10 @@ public sealed class PrivateBrowserActivity : Activity
 
         var toolbar = new AndroidLinearLayout(this)
         {
-            Orientation = AndroidOrientation.Horizontal,
-            Gravity = GravityFlags.CenterVertical
+            Orientation = AndroidOrientation.Horizontal
         };
+
+        toolbar.SetGravity(GravityFlags.CenterVertical);
 
         _backButton = CreateButton("‹", "Voltar");
         _forwardButton = CreateButton("›", "Avançar");

@@ -53,10 +53,22 @@ jobs:
         shell: pwsh
         run: dotnet restore src/Navegador.Core/Navegador.Core.csproj
 
-      - name: Restaurar aplicativo
+      - name: Restaurar aplicativo Windows
+        if: contains(matrix.target, 'windows')
+        shell: pwsh
+        run: dotnet restore src/Navegador/Navegador.csproj --no-dependencies -p:TargetFramework=${{ matrix.target }} -r win-x64
+
+      - name: Restaurar aplicativo Android
+        if: contains(matrix.target, 'android')
         shell: pwsh
         run: dotnet restore src/Navegador/Navegador.csproj --no-dependencies -p:TargetFramework=${{ matrix.target }}
 
-      - name: Compilar
+      - name: Compilar Windows
+        if: contains(matrix.target, 'windows')
+        shell: pwsh
+        run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }} -r win-x64 --no-restore
+
+      - name: Compilar Android
+        if: contains(matrix.target, 'android')
         shell: pwsh
         run: dotnet build src/Navegador/Navegador.csproj -c Release -f ${{ matrix.target }} --no-restore
