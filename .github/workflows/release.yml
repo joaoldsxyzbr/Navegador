@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: navegador-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   package-windows:
@@ -78,16 +78,36 @@ jobs:
         shell: pwsh
         run: |
           $profile = Join-Path $env:RUNNER_TEMP "navegador-smoke-profile"
+          $screenshot = Join-Path $env:RUNNER_TEMP "navegador-smoke.png"
           $chrome = (Resolve-Path "artifacts/package/App/chrome.exe").Path
-          $args = @("--headless=new","--no-first-run","--disable-gpu","--user-data-dir=$profile","--dump-dom","data:text/html,<html><body>Navegador smoke test</body></html>")
-          $output = & $chrome @args 2>&1 | Out-String
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host $output
-            throw "Chromium bootstrap falhou no smoke test."
+          $arguments = @(
+            "--headless=new",
+            "--no-first-run",
+            "--disable-gpu",
+            "--disable-background-networking",
+            "--user-data-dir=$profile",
+            "--screenshot=$screenshot",
+            "data:text/html,<html><body>Navegador smoke test</body></html>"
+          )
+
+          $process = Start-Process -FilePath $chrome -ArgumentList $arguments -PassThru -WindowStyle Hidden
+          if (-not $process.WaitForExit(30000)) {
+            Get-CimInstance Win32_Process -Filter "Name = 'chrome.exe'" -ErrorAction SilentlyContinue |
+              Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith((Split-Path $chrome), [StringComparison]::OrdinalIgnoreCase) } |
+              ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+            throw "Chromium bootstrap excedeu 30 segundos no smoke test."
           }
-          if ($output -notmatch "Navegador smoke test") {
-            Write-Host $output
-            throw "Smoke test não confirmou renderização."
+
+          if ($process.ExitCode -ne 0) {
+            throw "Chromium bootstrap saiu com código $($process.ExitCode) no smoke test."
+          }
+
+          if (-not (Test-Path $screenshot)) {
+            throw "Smoke test não gerou screenshot."
+          }
+
+          if ((Get-Item $screenshot).Length -lt 1000) {
+            throw "Screenshot do smoke test parece inválido."
           }
 
       - name: Compactar e gerar manifesto
