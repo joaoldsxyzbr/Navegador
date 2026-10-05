@@ -44,9 +44,9 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts/tools | Out-Null
-          cl /nologo /std:c++17 /O2 /EHsc /utf-8 /MT /DUNICODE /D_UNICODE launcher/Navegador.cpp /link /SUBSYSTEM:WINDOWS shell32.lib /OUT:artifacts/tools/Navegador.exe
+          cl /nologo /std:c++17 /O2 /EHsc /utf-8 /MT /DUNICODE /D_UNICODE launcher/Navegador.cpp /link /SUBSYSTEM:WINDOWS user32.lib shell32.lib /OUT:artifacts/tools/Navegador.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          cl /nologo /std:c++17 /O2 /EHsc /utf-8 /MT /DUNICODE /D_UNICODE updater/NavegadorUpdater.cpp /link /SUBSYSTEM:WINDOWS winhttp.lib bcrypt.lib shell32.lib /OUT:"artifacts/tools/Atualizar Navegador.exe"
+          cl /nologo /std:c++17 /O2 /EHsc /utf-8 /MT /DUNICODE /D_UNICODE updater/NavegadorUpdater.cpp /link /SUBSYSTEM:WINDOWS user32.lib winhttp.lib bcrypt.lib shell32.lib /OUT:"artifacts/tools/Atualizar Navegador.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Baixar Chromium bootstrap fixado
