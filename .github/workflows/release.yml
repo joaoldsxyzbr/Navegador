@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: navegador-release
+  group: navegador-release-v2
   cancel-in-progress: true
 
 jobs:
