@@ -33,6 +33,8 @@ A menor configuração Windows publicada pelo GitHub para larger runners informa
 
 A escolha e a preparação do ambiente estão acompanhadas na [issue #8](https://github.com/joaoldsxyzbr/Navegador/issues/8).
 
+Status em 05/10/2026: ainda não há ambiente de build integral disponível. O runner padrão público do GitHub documenta 14 GB de SSD, abaixo dos 100 GB livres exigidos pelo Chromium. Portanto, manter a v0.1.0 bootstrap como base testável e não encaminhar o build completo aos runners padrão.
+
 ## Pré-requisitos no Windows
 
 Use a documentação oficial do Chromium como referência para Visual Studio, Windows SDK, Git e `depot_tools`. Mantenha `depot_tools` no início do `PATH`, conforme as instruções atuais do Chromium. O caminho do checkout deve ser curto e sem espaços; mantenha a árvore em disco rápido e evite que a máquina durma durante checkout/build.
