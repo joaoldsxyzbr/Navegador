@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: chromium-overlay-\${{ github.event.pull_request.number || github.ref }}
+  group: chromium-overlay-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
