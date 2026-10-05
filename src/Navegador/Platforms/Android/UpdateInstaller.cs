@@ -33,7 +33,7 @@ internal static class UpdateInstaller
         }
 
         var file = new Java.IO.File(packagePath);
-        var uri = FileProvider.GetUriForFile(
+        var uri = AndroidX.Core.Content.FileProvider.GetUriForFile(
             context,
             $"{context.PackageName}.fileprovider",
             file);
