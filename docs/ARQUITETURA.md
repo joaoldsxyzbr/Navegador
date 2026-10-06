@@ -2,7 +2,7 @@
 
 ## Decisão atual
 
-Rumo é o navegador Windows do repositório Navegador: C# / WinForms / .NET 10, usando WebView2 como motor. A release Chromium v0.1.0 é histórica.
+Rumo é o navegador Windows do repositório Navegador: C# / WinForms / .NET 10, usando WebView2 como motor. A release Chromium v0.1.0 é histórica. Os critérios para manter ou reavaliar o motor estão registrados em [Decisão do motor](DECISAO-MOTOR.md).
 
 ## Projetos
 
@@ -47,7 +47,7 @@ Extensões Chromium locais descompactadas podem ser instaladas, ativadas e remov
 
 Mudanças significativas de arquitetura, UX, segurança, extensões, atualização e manutenção devem partir do problema do Rumo e comparar soluções já testadas em projetos open source relevantes. O processo e as referências canônicas ficam em [`REFERENCIAS-OPEN-SOURCE.md`](REFERENCIAS-OPEN-SOURCE.md).
 
-A comparação não altera a decisão de base atual: o Rumo continua em C# / WinForms / .NET 10 + WebView2. Referências externas servem para extrair princípios e padrões; limitações do WebView2 devem ser tratadas explicitamente, sem simular suporte inexistente.
+A decisão de motor mantém o Rumo em C# / WinForms / .NET 10 + WebView2 enquanto não houver uma alternativa que comprove sandbox, distribuição e suporte a extensões no Windows. Referências externas servem para extrair princípios e padrões; limitações do WebView2 devem ser tratadas explicitamente, sem simular suporte inexistente.
 
 ## Publicação
 
