@@ -1,5 +1,6 @@
 using Navegador.Core;
 using Navegador.Core.Updates;
+using Navegador.Windows.Ui;
 
 namespace Navegador.Windows;
 
@@ -22,8 +23,8 @@ internal static class Program
         if (instance is null)
         {
             MessageBox.Show(
-                "O Navegador já está aberto.",
-                "Navegador",
+                $"O {Branding.Name} já está aberto.",
+                Branding.Name,
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
             return;

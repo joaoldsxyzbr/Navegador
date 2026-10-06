@@ -8,7 +8,7 @@ public static class UpdateTests
     private const string ValidReleaseJson = """
     {
       "tag_name": "v0.5.0",
-      "name": "Navegador v0.5.0",
+      "name": "Rumo v0.5.0",
       "assets": [
         {
           "name": "Navegador-v0.5.0-windows-x64.zip",
@@ -129,12 +129,12 @@ public static class UpdateTests
               "tag_name": "v0.6.0",
               "assets": [
                 {
-                  "name": "Navegador-v0.6.0-windows-x64.zip",
-                  "browser_download_url": "https://github.com/a/b/Navegador-v0.6.0-windows-x64.zip"
+                  "name": "Rumo-v0.6.0-windows-x64.zip",
+                  "browser_download_url": "https://github.com/a/b/Rumo-v0.6.0-windows-x64.zip"
                 },
                 {
-                  "name": "Navegador-v0.6.0-windows-x64.zip.sha256",
-                  "browser_download_url": "https://github.com/a/b/Navegador-v0.6.0-windows-x64.zip.sha256"
+                  "name": "Rumo-v0.6.0-windows-x64.zip.sha256",
+                  "browser_download_url": "https://github.com/a/b/Rumo-v0.6.0-windows-x64.zip.sha256"
                 }
               ]
             }

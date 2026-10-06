@@ -1,6 +1,10 @@
-# Navegador
+# Rumo
 
-Um navegador próprio para Windows, com visual do Chrome e motor WebView2 (Chromium/Edge).
+O Rumo é um navegador para Windows, com a organização familiar do Chrome e motor WebView2 (Chromium/Edge).
+
+<img src="assets/rumo-mark.svg" width="112" alt="Logo Rumo — uma bússola azul e ciano">
+
+[Identidade visual](docs/IDENTIDADE-VISUAL.md)
 
 ## Baixar e usar
 
@@ -15,7 +19,7 @@ O aplicativo é publicado como **single-file self-contained**, então o .NET 10 
 
 ## Onde ficam os dados
 
-O Navegador tenta manter tudo em `Data\` ao lado do executável, para continuar portátil:
+O Rumo tenta manter tudo em `Data\` ao lado do executável, para continuar portátil:
 
 | Arquivo | Conteúdo |
 | --- | --- |
@@ -31,7 +35,7 @@ Se essa pasta não puder ser criada — por exemplo, quando o app é extraído d
 
 Começamos pelo PC. O app Windows usa C# e WinForms para a interface e WebView2 para carregar sites. O motor é fornecido pelo Microsoft Edge WebView2 Runtime; não compilamos Chromium nem Firefox.
 
-O visual deve reproduzir de perto a organização do Chrome: faixa de abas, barra de endereço, controles, menus e acesso a extensões. O nome e a identidade do produto continuam sendo Navegador.
+O visual mantém a organização familiar do Chrome: faixa de abas, barra de endereço, controles, menus e acesso a extensões. A marca do produto é Rumo; o repositório e o executável continuam com o nome técnico Navegador nesta versão.
 
 A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 

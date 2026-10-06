@@ -32,14 +32,14 @@ internal static class NewTabPage
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nova guia</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nova guia — Rumo</title>
 <style>
-:root{color-scheme:dark;--bg:#202124;--surface:#303134;--hover:#3c4043;--text:#e8eaed;--muted:#9aa0a6;--accent:#8ab4f8}
-*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0}body{overflow:hidden;background:radial-gradient(circle at 50% 34%,rgba(138,180,248,.07),transparent 34%),var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif}
+:root{color-scheme:dark;--bg:#202124;--surface:#303134;--hover:#3c4043;--text:#e8eaed;--muted:#9aa0a6;--accent:#74d8ed}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0}body{overflow:hidden;background:radial-gradient(circle at 50% 34%,rgba(70,196,225,.08),transparent 34%),var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif}
 main{width:min(760px,calc(100% - 48px));margin:0 auto;padding-top:clamp(92px,17vh,180px);text-align:center}
 .brand{display:inline-flex;align-items:center;gap:14px;margin-bottom:34px;font-size:clamp(32px,4vw,48px);font-weight:500;letter-spacing:-1.8px}
-.mark{position:relative;width:38px;height:38px;border-radius:50%;background:conic-gradient(#8ab4f8 0 25%,#81c995 25% 50%,#fdd663 50% 75%,#f28b82 75%);box-shadow:inset 0 0 0 9px var(--bg)}
-.mark:after{content:"";position:absolute;inset:13px;border-radius:50%;background:var(--accent)}
+.mark{width:46px;height:46px;display:block;flex:0 0 auto}
+.mark svg{display:block;width:100%;height:100%}
 .search{height:52px;display:flex;align-items:center;gap:12px;width:100%;padding:0 18px;border:1px solid transparent;border-radius:26px;background:var(--surface);box-shadow:0 1px 6px rgba(0,0,0,.18);transition:.15s}
 .search:hover{background:var(--hover)}.search:focus-within{border-color:var(--accent);box-shadow:0 1px 8px rgba(0,0,0,.3)}
 .search-icon{width:18px;height:18px;border:2px solid var(--muted);border-radius:50%;position:relative;flex:0 0 auto}.search-icon:after{content:"";position:absolute;width:7px;height:2px;background:var(--muted);right:-5px;bottom:-2px;transform:rotate(45deg);border-radius:2px}
@@ -49,7 +49,7 @@ input{width:100%;border:0;outline:0;background:transparent;color:var(--text);fon
 @media(max-width:560px){.shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
-<body><main><div class="brand"><span class="mark" aria-hidden="true"></span><span>Navegador</span></div>
+<body><main><div class="brand"><span class="mark" aria-hidden="true">__BRAND_MARK__</span><span>__BRAND_NAME__</span></div>
 <form class="search" id="search-form" autocomplete="off"><span class="search-icon" aria-hidden="true"></span><input id="query" autofocus spellcheck="false" placeholder="Pesquisar no Google ou digitar um endereço" aria-label="Pesquisar ou digitar endereço"></form>
 <div class="shortcut-grid">__SHORTCUTS__</div><div class="hint">Ctrl+L seleciona a barra de endereço · Ctrl+T abre uma nova guia</div></main>
 <script>
@@ -59,7 +59,10 @@ document.querySelectorAll("[data-url]").forEach(button=>button.addEventListener(
 </script></body></html>
 """;
 
-        return template.Replace("__SHORTCUTS__", shortcutsBlock, StringComparison.Ordinal);
+        return template
+            .Replace("__SHORTCUTS__", shortcutsBlock, StringComparison.Ordinal)
+            .Replace("__BRAND_MARK__", Branding.MarkSvg, StringComparison.Ordinal)
+            .Replace("__BRAND_NAME__", Branding.Name, StringComparison.Ordinal);
     }
 
     public static bool TryGetNavigationTarget(string json, out string value)

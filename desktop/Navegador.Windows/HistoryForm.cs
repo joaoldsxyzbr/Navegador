@@ -12,7 +12,7 @@ internal sealed class HistoryForm : BrowserListForm
     private readonly Button _removeButton;
 
     public HistoryForm(HistoryStore store, Action<string> openUrl)
-        : base("Histórico do Navegador", new Size(780, 500))
+        : base($"Histórico do {Branding.Name}", new Size(780, 500))
     {
         _store = store;
         _openUrl = openUrl;

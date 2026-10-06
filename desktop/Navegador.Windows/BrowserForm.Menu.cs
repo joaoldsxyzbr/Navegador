@@ -39,8 +39,8 @@ internal sealed partial class BrowserForm
 
         var extensionsItem = Item("Extensões", null, OpenExtensions);
         var settingsItem = Item("Configurações", null, ShowSettings);
-        _updateMenuItem = Item("Atualizar Navegador", null, async () => await CheckForUpdatesAsync());
-        var aboutItem = Item("Sobre o Navegador", null, ShowAbout);
+        _updateMenuItem = Item($"Atualizar {AppName}", null, async () => await CheckForUpdatesAsync());
+        var aboutItem = Item($"Sobre o {AppName}", null, ShowAbout);
         var closeTabItem = Item("Fechar guia", "Ctrl+W", CloseActiveTab);
 
         menu.Items.AddRange(

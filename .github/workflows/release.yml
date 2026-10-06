@@ -51,7 +51,7 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.version }}"
           @"
-          NAVEGADOR v$version
+          RUMO v$version
 
           PARA ABRIR:
           1. Extraia todo o ZIP.
@@ -72,16 +72,16 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.version }}"
           New-Item -ItemType Directory -Force dist | Out-Null
-          $zip = "dist/Navegador-v$version-windows-x64.zip"
+          $zip = "dist/Rumo-v$version-windows-x64.zip"
           Compress-Archive -Path publish/Navegador/* -DestinationPath $zip -CompressionLevel Optimal
           $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-          "$hash  Navegador-v$version-windows-x64.zip" | Set-Content -Encoding ascii "$zip.sha256"
+          "$hash  Rumo-v$version-windows-x64.zip" | Set-Content -Encoding ascii "$zip.sha256"
       - name: Notas da release
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
           @"
-          ## Navegador v$version
+          ## Rumo v$version
 
           - Core separado e testável;
           - sessão, favoritos, histórico, downloads e configurações;
@@ -97,4 +97,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          gh release create "${{ github.ref_name }}" "dist/Navegador-v$version-windows-x64.zip" "dist/Navegador-v$version-windows-x64.zip.sha256" --target "${{ github.sha }}" --title "Navegador v$version" --notes-file release-notes.md
+          gh release create "${{ github.ref_name }}" "dist/Rumo-v$version-windows-x64.zip" "dist/Rumo-v$version-windows-x64.zip.sha256" --target "${{ github.sha }}" --title "Rumo v$version" --notes-file release-notes.md

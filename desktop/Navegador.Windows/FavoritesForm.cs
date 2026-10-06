@@ -14,7 +14,7 @@ internal sealed class FavoritesForm : BrowserListForm
     private readonly Button _openButton;
 
     public FavoritesForm(FavoritesStore store, Action<string> openUrl, Func<(string Url, string Title)?> currentPage)
-        : base("Favoritos do Navegador", new Size(720, 460))
+        : base($"Favoritos do {Branding.Name}", new Size(720, 460))
     {
         _store = store;
         _openUrl = openUrl;

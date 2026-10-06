@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using Navegador.Core;
 using Navegador.Core.Storage;
 using Navegador.Core.Updates;
+using Navegador.Windows.Ui;
 
 namespace Navegador.Windows;
 
@@ -42,8 +43,8 @@ internal static class UpdateService
             {
                 MessageBox.Show(
                     owner,
-                    $"Você já está usando a versão mais recente do Navegador ({VersionFormatter.ToDisplay(current)}).",
-                    "Atualizar Navegador",
+                    $"Você já está usando a versão mais recente do {Branding.Name} ({VersionFormatter.ToDisplay(current)}).",
+                    $"Atualizar {Branding.Name}",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
                 return;
@@ -59,8 +60,8 @@ internal static class UpdateService
                 $"Atual: {VersionFormatter.ToDisplay(current)}\n" +
                 $"Nova: {release.DisplayVersion}" +
                 sizeText +
-                "\n\nBaixar e instalar agora? O Navegador será reiniciado.",
-                "Atualizar Navegador",
+                $"\n\nBaixar e instalar agora? O {Branding.Name} será reiniciado.",
+                $"Atualizar {Branding.Name}",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
@@ -115,8 +116,8 @@ internal static class UpdateService
         {
             MessageBox.Show(
                 owner,
-                "Não foi possível atualizar o Navegador.\n\n" + exception.Message,
-                "Atualizar Navegador",
+                $"Não foi possível atualizar o {Branding.Name}.\n\n" + exception.Message,
+                $"Atualizar {Branding.Name}",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }
@@ -171,7 +172,7 @@ internal static class UpdateService
             MessageBox.Show(
                 "A atualização não pôde ser concluída.\n\n" + exception.Message +
                 "\n\nAbra o Navegador novamente e tente atualizar.",
-                "Navegador",
+                Branding.Name,
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
         }

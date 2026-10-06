@@ -18,7 +18,7 @@ internal sealed class SettingsForm : Form
     {
         _settings = settings;
 
-        Text = "Configurações do Navegador";
+        Text = $"Configurações do {Branding.Name}";
         StartPosition = FormStartPosition.CenterParent;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         ClientSize = new Size(560, 380);
@@ -79,7 +79,7 @@ internal sealed class SettingsForm : Form
             ForeColor = Theme.MutedText,
             TextAlign = ContentAlignment.TopLeft,
             Text =
-                $"Navegador {CurrentVersion.Display}\n" +
+                $"{Branding.Name} {CurrentVersion.Display}\n" +
                 $"Dados: {AppPaths.DataDirectory}\n" +
                 $"Modo: {(AppPaths.IsPortable ? "portátil (ao lado do executável)" : "perfil do usuário")}\n" +
                 $"WebView2: {WebViewVersion()}"

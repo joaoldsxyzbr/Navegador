@@ -16,8 +16,8 @@
     <AssemblyVersion>$(NavegadorVersion).0</AssemblyVersion>
     <FileVersion>$(NavegadorVersion).0</FileVersion>
     <InformationalVersion>$(NavegadorVersion)</InformationalVersion>
-    <Product>Navegador</Product>
-    <Company>Navegador</Company>
+    <Product>Rumo</Product>
+    <Company>Projeto Rumo</Company>
     <NeutralLanguage>pt-BR</NeutralLanguage>
   </PropertyGroup>
 

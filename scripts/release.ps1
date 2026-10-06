@@ -35,7 +35,7 @@ try {
         Write-Host "VERSION já está em $Version; criando a tag no commit atual." -ForegroundColor Cyan
     }
 
-    git tag -a $tag -m "Navegador $Version"
+    git tag -a $tag -m "Rumo $Version"
     if ($Push) {
         git push origin main
         git push origin $tag

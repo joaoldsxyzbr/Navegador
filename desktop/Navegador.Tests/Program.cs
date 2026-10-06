@@ -21,7 +21,7 @@ internal static class Program
             Console.WriteLine($"Filtro: {string.Join(", ", args)}");
         }
 
-        Console.WriteLine("Testes do Navegador");
+        Console.WriteLine("Testes do Rumo");
         Console.WriteLine();
         return TestRunner.Run(cases);
     }

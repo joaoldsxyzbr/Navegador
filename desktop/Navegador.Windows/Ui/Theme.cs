@@ -16,7 +16,7 @@ internal static class Theme
     public static readonly Color Text = Color.FromArgb(232, 234, 237);
     public static readonly Color MutedText = Color.FromArgb(154, 160, 166);
     public static readonly Color CloseHover = Color.FromArgb(196, 43, 28);
-    public static readonly Color Accent = Color.FromArgb(138, 180, 248);
+    public static readonly Color Accent = Color.FromArgb(116, 216, 237);
     public static readonly Color PageBackground = Color.FromArgb(32, 33, 36);
     public static readonly Color Starred = Color.FromArgb(251, 188, 4);
 

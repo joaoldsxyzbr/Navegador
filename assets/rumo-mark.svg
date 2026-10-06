@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Bússola do Rumo">
+  <defs>
+    <linearGradient id="ring" x1="15" y1="64" x2="113" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4266e7"/>
+      <stop offset="1" stop-color="#27d9e8"/>
+    </linearGradient>
+    <linearGradient id="needle" x1="30" y1="100" x2="98" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3155c7"/>
+      <stop offset="1" stop-color="#27d9e8"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="57" fill="#09142f"/>
+  <circle cx="64" cy="64" r="47" fill="none" stroke="url(#ring)" stroke-width="6"/>
+  <path d="M98 28 73 69 30 100 55 59Z" fill="url(#needle)"/>
+  <path d="M98 28 73 69 64 64Z" fill="#a8f5fb"/>
+  <path d="M30 100 55 59 64 64Z" fill="#263e99"/>
+  <circle cx="64" cy="64" r="7" fill="#f4fdff"/>
+</svg>

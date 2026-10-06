@@ -1,8 +1,8 @@
-# Arquitetura do Navegador
+# Arquitetura do Rumo
 
 ## Decisão atual
 
-Navegador Windows próprio em C# / WinForms / .NET 10, usando WebView2 como motor. A release Chromium v0.1.0 é histórica.
+Rumo é o navegador Windows do repositório Navegador: C# / WinForms / .NET 10, usando WebView2 como motor. A release Chromium v0.1.0 é histórica.
 
 ## Projetos
 
@@ -16,7 +16,7 @@ A dependência é Windows → Core.
 
 ## Shell e nova guia
 
-O shell usa barra de título própria, abas arredondadas, omnibox com foco destacado, ícones vetoriais desenhados pelo app e botão visível de atualização. A nova guia é uma página interna escura e minimalista, com pesquisa central e atalhos vindos dos favoritos.
+O shell usa barra de título própria, abas arredondadas, omnibox com foco destacado, ícones vetoriais desenhados pelo app e botão visível de atualização. A nova guia é uma página interna escura e minimalista, com marca Rumo, pesquisa central e atalhos vindos dos favoritos. A bússola vetorial é `assets/rumo-mark.svg`; `assets/rumo.ico` é embutido no executável.
 
 ## Dados e modo portátil
 

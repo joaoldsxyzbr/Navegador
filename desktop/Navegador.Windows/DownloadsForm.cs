@@ -15,7 +15,7 @@ internal sealed class DownloadsForm : BrowserListForm
     private readonly Button _clearButton;
 
     public DownloadsForm(DownloadManager manager, SettingsStore settings)
-        : base("Downloads do Navegador", new Size(780, 460))
+        : base($"Downloads do {Branding.Name}", new Size(780, 460))
     {
         _manager = manager;
         _settings = settings;

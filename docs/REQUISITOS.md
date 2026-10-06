@@ -1,10 +1,11 @@
-# Requisitos do Navegador
+# Requisitos do Rumo
 
 ## Windows
 
 - C# / WinForms / .NET 10.
 - WebView2, sem compilar Chromium/Firefox.
-- Visual próximo do Chrome, mantendo identidade Navegador.
+- Visual próximo do Chrome, mantendo identidade Rumo.
+- Logo de bússola azul/ciano na nova guia e no ícone do executável.
 - Tema escuro.
 - Abas, navegação, omnibox e nova guia própria.
 - Botão visível para atualizar o Navegador.

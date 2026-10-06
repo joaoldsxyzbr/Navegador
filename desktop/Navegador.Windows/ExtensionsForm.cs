@@ -31,7 +31,7 @@ internal sealed class ExtensionsForm : Form
     {
         _profile = profile;
 
-        Text = "Extensões do Navegador";
+        Text = $"Extensões do {Branding.Name}";
         StartPosition = FormStartPosition.CenterParent;
         MinimumSize = new Size(620, 400);
         Size = new Size(720, 480);

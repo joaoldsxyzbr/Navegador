@@ -9,7 +9,7 @@ namespace Navegador.Windows;
 
 internal sealed partial class BrowserForm : Form
 {
-    private const string AppName = "Navegador";
+    private const string AppName = Branding.Name;
 
     private static readonly Color TitleBarColor = Theme.TitleBar;
     private static readonly Color ToolbarColor = Theme.Toolbar;
@@ -108,6 +108,7 @@ internal sealed partial class BrowserForm : Form
         _downloadsBar = new DownloadsBar(_downloads);
 
         Text = AppName;
+        Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         MinimumSize = new Size(860, 560);
         Size = new Size(1360, 860);
         StartPosition = FormStartPosition.CenterScreen;
@@ -157,7 +158,7 @@ internal sealed partial class BrowserForm : Form
         _reloadButton = CreateIconButton(BrowserIcon.Reload, "Recarregar", ToolbarColor);
         _bookmarkButton = CreateIconButton(BrowserIcon.Star, "Adicionar aos favoritos", ToolbarColor);
         _downloadsButton = CreateIconButton(BrowserIcon.Download, "Downloads", ToolbarColor);
-        _updateButton = CreateIconButton(BrowserIcon.Update, "Atualizar Navegador", ToolbarColor);
+        _updateButton = CreateIconButton(BrowserIcon.Update, $"Atualizar {AppName}", ToolbarColor);
         _extensionsButton = CreateIconButton(BrowserIcon.Extensions, "Extensões", ToolbarColor);
         _menuButton = CreateIconButton(BrowserIcon.Menu, "Menu", ToolbarColor);
 
@@ -254,7 +255,6 @@ internal sealed partial class BrowserForm : Form
 
         Controls.Add(root);
 
-        LocationChanged += (_, _) => UpdateMaximizedBounds();
         Resize += (_, _) =>
         {
             _maximizeButton.Text = WindowState == FormWindowState.Maximized ? "❐" : "□";
@@ -263,7 +263,6 @@ internal sealed partial class BrowserForm : Form
 
         Shown += async (_, _) =>
         {
-            UpdateMaximizedBounds();
             await RestoreOrStartAsync();
         };
 

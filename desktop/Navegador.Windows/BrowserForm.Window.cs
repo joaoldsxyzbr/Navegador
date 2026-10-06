@@ -7,10 +7,13 @@ internal sealed partial class BrowserForm
     private const int ResizeBorder = 6;
     private const int TitleRowHeight = 42;
 
+    private const int WmGetMinMaxInfo = 0x0024;
     private const int WmNcHitTest = 0x0084;
     private const int WmNcLButtonDown = 0x00A1;
     private const int WmSetCursor = 0x0020;
     private const int WmNcLButtonDblClk = 0x00A3;
+
+    private const uint MonitorDefaultToNearest = 0x00000002;
 
     private const int HtClient = 1;
     private const int HtCaption = 2;
@@ -33,22 +36,9 @@ internal sealed partial class BrowserForm
 
     private void ToggleMaximize()
     {
-        if (WindowState == FormWindowState.Maximized)
-        {
-            WindowState = FormWindowState.Normal;
-            return;
-        }
-
-        UpdateMaximizedBounds();
-        WindowState = FormWindowState.Maximized;
-    }
-
-    private void UpdateMaximizedBounds()
-    {
-        if (!IsHandleCreated) return;
-
-        // Sem isto a janela maximizada cobre a barra de tarefas.
-        MaximizedBounds = Screen.FromHandle(Handle).WorkingArea;
+        WindowState = WindowState == FormWindowState.Maximized
+            ? FormWindowState.Normal
+            : FormWindowState.Maximized;
     }
 
     private void BeginWindowDrag(object? sender, MouseEventArgs eventArgs)
@@ -63,6 +53,12 @@ internal sealed partial class BrowserForm
 
     protected override void WndProc(ref Message message)
     {
+        if (message.Msg == WmGetMinMaxInfo && TrySetMaximizedWorkingArea(message.LParam))
+        {
+            message.Result = IntPtr.Zero;
+            return;
+        }
+
         if (message.Msg == WmNcHitTest && WindowState == FormWindowState.Normal)
         {
             base.WndProc(ref message);
@@ -112,6 +108,32 @@ internal sealed partial class BrowserForm
         base.WndProc(ref message);
     }
 
+    private bool TrySetMaximizedWorkingArea(IntPtr parameter)
+    {
+        if (parameter == IntPtr.Zero) return false;
+
+        var monitor = MonitorFromWindow(Handle, MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero) return false;
+
+        var monitorInfo = new NativeMonitorInfo { Size = Marshal.SizeOf<NativeMonitorInfo>() };
+        if (!GetMonitorInfo(monitor, ref monitorInfo)) return false;
+
+        var bounds = Marshal.PtrToStructure<NativeMinMaxInfo>(parameter);
+        bounds.MaxPosition = new NativePoint
+        {
+            X = monitorInfo.WorkArea.Left - monitorInfo.Monitor.Left,
+            Y = monitorInfo.WorkArea.Top - monitorInfo.Monitor.Top
+        };
+        bounds.MaxSize = new NativePoint
+        {
+            X = monitorInfo.WorkArea.Right - monitorInfo.WorkArea.Left,
+            Y = monitorInfo.WorkArea.Bottom - monitorInfo.WorkArea.Top
+        };
+
+        Marshal.StructureToPtr(bounds, parameter, false);
+        return true;
+    }
+
     private static IntPtr CursorForHitTest(int hitTest) => hitTest switch
     {
         HtLeft or HtRight => CursorSizeWe,
@@ -120,6 +142,48 @@ internal sealed partial class BrowserForm
         HtTopRight or HtBottomLeft => CursorSizeNesw,
         _ => CursorArrow
     };
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeMinMaxInfo
+    {
+        public NativePoint Reserved;
+        public NativePoint MaxSize;
+        public NativePoint MaxPosition;
+        public NativePoint MinTrackSize;
+        public NativePoint MaxTrackSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeMonitorInfo
+    {
+        public int Size;
+        public NativeRect Monitor;
+        public NativeRect WorkArea;
+        public uint Flags;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref NativeMonitorInfo monitorInfo);
 
     [DllImport("user32.dll")]
     private static extern bool ReleaseCapture();
