@@ -13,14 +13,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: webview2-windows-${{ github.event.pull_request.number || github.ref }}
+  group: navegador-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Compilar app Windows
+  test:
+    name: Testar lógica do Core
     runs-on: windows-latest
     timeout-minutes: 15
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +32,44 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restaurar dependências
-        run: dotnet restore desktop/Navegador.Windows/Navegador.Windows.csproj
+        run: dotnet restore desktop/Navegador.Tests/Navegador.Tests.csproj
+
+      # O runner de testes do projeto é um executável sem dependências externas:
+      # roda em qualquer máquina, com ou sem acesso ao NuGet.
+      - name: Rodar testes
+        run: dotnet run --project desktop/Navegador.Tests/Navegador.Tests.csproj --configuration Release --no-restore
+
+  build:
+    name: Compilar app Windows
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restaurar dependências
+        run: dotnet restore desktop/Navegador.Windows/Navegador.Windows.csproj -r win-x64
 
       - name: Compilar
-        run: dotnet build desktop/Navegador.Windows/Navegador.Windows.csproj --configuration Release --no-restore
+        run: dotnet build desktop/Navegador.Windows/Navegador.Windows.csproj --configuration Release --runtime win-x64 --no-restore
+
+      - name: Conferir se a versão publicada veio do arquivo VERSION
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          dotnet msbuild desktop/Navegador.Windows/Navegador.Windows.csproj `
+            -getProperty:Version -nologo |
+            Out-String |
+            ForEach-Object {
+              if ($_ -notmatch [regex]::Escape($version)) {
+                throw "A versão compilada não é a do arquivo VERSION ($version)."
+              }
+            }
+
+          Write-Host "Versão conferida: $version"

@@ -9,3 +9,8 @@ obj/
 *.snupkg
 artifacts/
 Data/
+
+# Verificação de compilação offline (stubs da API do WebView2).
+.verify/
+publish/
+dist/

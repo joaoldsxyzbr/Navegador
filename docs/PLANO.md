@@ -1,40 +1,48 @@
 # Plano de implementação
 
-## Estado — 05/10/2026
+## Estado
 
-A direção é um app Windows próprio em C# / WinForms com WebView2. O repositório foi reiniciado numa nova árvore; o histórico Git e a release v0.1.0 continuam preservados.
+A direção é um app Windows próprio em C# / WinForms com WebView2, com a lógica testável separada em `Navegador.Core`. O protótipo está na versão `0.5.0`.
 
-## Fase 1 — Protótipo Windows
+## Fase 1 — Protótipo Windows (concluída)
 
 - [x] Definir WebView2 para PC e começar pelo Windows.
 - [x] Criar app WinForms com motor WebView2.
 - [x] Implementar abas, endereço/busca, voltar, avançar, recarregar e tema escuro.
-- [x] Criar perfil persistente em `Data/WebView2`.
+- [x] Criar perfil persistente.
 - [x] Habilitar API de extensões e criar tela para instalar pasta local, ativar, desativar e remover.
-- [ ] Compilar e validar no CI Windows.
-- [ ] Testar no PC com WebView2 Runtime.
-- [ ] Comparar screenshots e aproximar a interface do Chrome.
-- [ ] Testar extensões populares, ícones, popups e limitações.
+- [x] Compilar e validar no CI Windows.
+- [x] Comparar a composição visual com o Chrome (barra de título, abas, omnibox, menus).
 
-## Fase 2 — Completar o MVP
+## Fase 2 — MVP completo (concluída em 0.5.0)
 
-- [ ] Polir a interface Chrome-like: formas de abas, barra, menus, ícones, estados e atalhos.
-- [ ] Favoritos e histórico.
-- [ ] Downloads com escolha de destino e tela de downloads.
-- [ ] Janela privada e exclusão de dados.
-- [ ] Tela inicial, configurações e acessibilidade.
-- [ ] Avaliar instalação da Chrome Web Store e popups/ações de extensão; WebView2 só aceita diretamente a pasta descompactada pela API.
+- [x] Favoritos: estrela, barra de favoritos, janela com busca, renomear e remover.
+- [x] Histórico: registro, busca, remoção e limpeza total.
+- [x] Downloads: pasta de destino, pergunta opcional, faixa de progresso e gerenciador.
+- [x] Sessão: reabrir as abas anteriores.
+- [x] Configurações, com página inicial e caminho de dados visível.
+- [x] Instância única.
+- [x] Separar `Navegador.Core` e cobrir a lógica com testes que rodam sem NuGet.
+- [x] Endurecer o atualizador: token de uso único, destino fixo, hash conferido no auxiliar e rollback.
+- [x] Centralizar a versão em `VERSION` e publicar por etiqueta.
 
-## Fase 3 — Distribuição
+## Fase 3 — Polimento do shell
 
-- [ ] Decidir como atender PCs sem WebView2 Runtime.
-- [ ] Gerar pacote portátil x64 e validar em pasta extraída.
-- [ ] Atualização com HTTPS, SHA-256, preservação do perfil e rollback.
-- [ ] Publicar uma nova release sem alterar a v0.1.0.
+- [ ] Favicons nas abas e nos favoritos.
+- [ ] Reordenar abas arrastando, fixar aba e reabrir aba fechada (`Ctrl+Shift+T`).
+- [ ] Autocompletar na barra de endereço usando o histórico.
+- [ ] Menu de contexto na página (abrir link em nova aba, copiar endereço, salvar imagem).
+- [ ] Janela privada e limpeza de dados pela interface.
+- [ ] Página inicial própria, com atalhos e busca.
 
-## Fase 4 — Celular
+## Fase 4 — Distribuição
+
+- [ ] Decidir como atender PCs sem WebView2 Runtime (instalador do Runtime ou pacote fixo).
+- [ ] Empacotar instalador, preservando o pacote portátil.
+- [ ] Assinar o executável e o pacote de atualização.
+
+## Fase 5 — Celular
 
 - [ ] Reavaliar Android e iOS depois que a versão Windows estiver estável.
 - [ ] Definir motor e interface mobile separadamente.
 - [ ] Só então avaliar sincronização.
-

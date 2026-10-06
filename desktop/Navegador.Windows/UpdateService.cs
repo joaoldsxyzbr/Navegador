@@ -1,23 +1,34 @@
 using System.Diagnostics;
 using System.IO.Compression;
-using System.Reflection;
 using System.Security.Cryptography;
-using System.Text.Json;
+using Navegador.Core;
+using Navegador.Core.Storage;
+using Navegador.Core.Updates;
 
 namespace Navegador.Windows;
 
+/// <summary>
+/// Atualização pelo GitHub Releases.
+///
+/// O processo principal baixa o pacote e inicia um processo auxiliar (o próprio
+/// <c>Navegador.exe</c> rodando fora da pasta de instalação) para trocar os
+/// arquivos. O auxiliar <b>não confia</b> nos argumentos recebidos: ele só age
+/// se encontrar um combinado gravado pelo processo pai, se o destino for a
+/// própria pasta da instalação e se o hash do pacote bater. Sem isso, qualquer
+/// processo do usuário poderia pedir para o Navegador sobrescrever qualquer
+/// pasta com um ZIP forjado.
+/// </summary>
 internal static class UpdateService
 {
     private const string LatestReleaseApi = "https://api.github.com/repos/joaoldsxyzbr/Navegador/releases/latest";
     private const string UpdateArgument = "--apply-update";
-    private const string PackageSuffix = "-windows-x64.zip";
 
     private static readonly HttpClient Http = new(new HttpClientHandler
     {
         AllowAutoRedirect = true
     })
     {
-        Timeout = TimeSpan.FromMinutes(5)
+        Timeout = TimeSpan.FromMinutes(10)
     };
 
     public static async Task CheckAndInstallAsync(IWin32Window owner)
@@ -25,13 +36,13 @@ internal static class UpdateService
         try
         {
             var release = await GetLatestReleaseAsync();
-            var current = GetCurrentVersion();
+            var current = CurrentVersion.Value;
 
-            if (release.Version <= current)
+            if (VersionFormatter.Compare(release.Version, current) <= 0)
             {
                 MessageBox.Show(
                     owner,
-                    $"Você já está usando a versão mais recente do Navegador ({FormatVersion(current)}).",
+                    $"Você já está usando a versão mais recente do Navegador ({VersionFormatter.ToDisplay(current)}).",
                     "Atualizar Navegador",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -44,39 +55,59 @@ internal static class UpdateService
 
             var confirmation = MessageBox.Show(
                 owner,
-                $"Uma nova versão está disponível.\n\n" +
-                $"Atual: {FormatVersion(current)}\n" +
-                $"Nova: {FormatVersion(release.Version)}" +
+                "Uma nova versão está disponível.\n\n" +
+                $"Atual: {VersionFormatter.ToDisplay(current)}\n" +
+                $"Nova: {release.DisplayVersion}" +
                 sizeText +
-                "\n\nBaixar e instalar agora?",
+                "\n\nBaixar e instalar agora? O Navegador será reiniciado.",
                 "Atualizar Navegador",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
             if (confirmation != DialogResult.Yes) return;
 
-            var updateDirectory = CreateUpdateDirectory(release.Version);
-            var packagePath = Path.Combine(updateDirectory, $"Navegador-{release.TagName}{PackageSuffix}");
+            var installDirectory = UpdateApplyPolicy.RequireInstallDirectory();
+            var executable = Environment.ProcessPath;
 
-            await DownloadFileAsync(release.DownloadUrl, packagePath);
-            await ValidatePackageAsync(packagePath, release.ExpectedSha256, release.ChecksumUrl);
-
-            var currentExecutable = Environment.ProcessPath;
-            if (string.IsNullOrWhiteSpace(currentExecutable) || !File.Exists(currentExecutable))
+            if (string.IsNullOrWhiteSpace(executable) || !File.Exists(executable))
                 throw new InvalidOperationException("Não foi possível localizar o executável atual do Navegador.");
 
-            var helperPath = Path.Combine(updateDirectory, "Navegador.UpdateHelper.exe");
-            File.Copy(currentExecutable, helperPath, overwrite: true);
+            var updateDirectory = UpdatePaths.CreateUpdateDirectory(release.DisplayVersion);
+            var packagePath = UpdatePaths.PackageFile(updateDirectory);
 
-            var installDirectory = Path.GetFullPath(AppContext.BaseDirectory);
+            await DownloadFileAsync(release.DownloadUrl, packagePath);
+            var packageHash = await ValidatePackageAsync(packagePath, release.ExpectedSha256, release.ChecksumUrl);
+
+            try
+            {
+                // O auxiliar roda de fora da pasta de instalação para não
+                // sobrescrever o próprio arquivo em execução.
+                File.Copy(executable, InstalledHelperPath(installDirectory), overwrite: true);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                throw new InvalidOperationException(
+                    "Não foi possível preparar o auxiliar da atualização. Verifique a permissão de escrita na pasta do Navegador.",
+                    exception);
+            }
+
+            var handshake = UpdateHandshake.Create(
+                Environment.ProcessId,
+                installDirectory,
+                packageHash,
+                release.DisplayVersion);
+
+            WriteHandshake(updateDirectory, handshake);
+
             var startInfo = new ProcessStartInfo
             {
-                FileName = helperPath,
+                FileName = InstalledHelperPath(installDirectory),
                 WorkingDirectory = updateDirectory,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
             startInfo.ArgumentList.Add(UpdateArgument);
+            startInfo.ArgumentList.Add(handshake.Token);
             startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
             startInfo.ArgumentList.Add(packagePath);
             startInfo.ArgumentList.Add(installDirectory);
@@ -97,6 +128,10 @@ internal static class UpdateService
         }
     }
 
+    /// <summary>
+    /// Segunda fase, já como processo auxiliar. Devolve <c>true</c> quando os
+    /// argumentos indicam uma atualização e o processo deve terminar aqui.
+    /// </summary>
     public static bool TryRunApplyUpdate(string[] args)
     {
         if (args.Length == 0 || !args[0].Equals(UpdateArgument, StringComparison.OrdinalIgnoreCase))
@@ -104,16 +139,35 @@ internal static class UpdateService
 
         try
         {
-            if (args.Length != 4)
-                throw new ArgumentException("Parâmetros da atualização inválidos.");
+            if (args.Length != 5)
+                throw new ArgumentException("Parâmetros da atualização inválidos. Invoque a atualização pelo próprio Navegador.");
 
-            if (!int.TryParse(args[1], out var parentProcessId))
+            var token = args[1];
+
+            if (!int.TryParse(args[2], out var parentProcessId))
                 throw new ArgumentException("PID do Navegador inválido.");
 
-            var packagePath = Path.GetFullPath(args[2]);
-            var installDirectory = Path.GetFullPath(args[3]);
+            var packagePath = Path.GetFullPath(args[3]);
+            var installDirectory = Path.GetFullPath(args[4]);
 
-            ApplyUpdate(parentProcessId, packagePath, installDirectory);
+            // O auxiliar não é um instalador de uso geral: só continua se o
+            // combinado gravado pelo processo pai estiver íntegro e for o mesmo.
+            var updateDirectory = Path.GetDirectoryName(packagePath)
+                ?? throw new InvalidOperationException("Caminho do pacote inválido.");
+
+            var handshake = ReadHandshake(updateDirectory);
+
+            if (!handshake.MatchesToken(token))
+                throw new InvalidOperationException("O combinado da atualização não confere. Inicie a atualização pelo Navegador.");
+
+            if (handshake.ParentProcessId != parentProcessId)
+                throw new InvalidOperationException("O processo que pediu a atualização não confere com o combinado.");
+
+            UpdateApplyPolicy.EnsureInstallDirectoryMatches(installDirectory);
+            UpdateApplyPolicy.EnsurePackageInsideUpdateRoot(packagePath);
+            UpdateApplyPolicy.EnsureHelperOutsideInstallDirectory(installDirectory);
+
+            ApplyUpdate(parentProcessId, packagePath, installDirectory, updateDirectory, handshake);
         }
         catch (Exception exception)
         {
@@ -128,30 +182,34 @@ internal static class UpdateService
         return true;
     }
 
+    /// <summary>Remove pacotes de atualização antigos. Nunca lança.</summary>
     public static void CleanupOldUpdateCache()
     {
-        try
-        {
-            var root = GetUpdateRoot();
-            if (!Directory.Exists(root)) return;
+        UpdatePaths.CleanupOldUpdates(TimeSpan.FromDays(1));
+    }
 
-            foreach (var directory in Directory.EnumerateDirectories(root))
-            {
-                try
-                {
-                    if (Directory.GetCreationTimeUtc(directory) < DateTime.UtcNow.AddDays(-1))
-                        Directory.Delete(directory, recursive: true);
-                }
-                catch
-                {
-                    // Um helper ainda em execução pode manter a pasta bloqueada.
-                }
-            }
-        }
-        catch
-        {
-            // Limpeza de cache nunca deve impedir o navegador de abrir.
-        }
+    private static string InstalledHelperPath(string installDirectory)
+    {
+        // Nome próprio para o auxiliar ser distinguível de uma cópia manual do exe.
+        return Path.Combine(installDirectory, "Navegador.Atualizador.exe");
+    }
+
+    private static void WriteHandshake(string updateDirectory, UpdateHandshake handshake)
+    {
+        // Fica em %LOCALAPPDATA%\Navegador\Updates, que já é uma pasta privada do
+        // usuário. A defesa principal continua sendo hash + pasta de destino fixa.
+        JsonFileStore.Write(UpdatePaths.MarkerFile(updateDirectory), handshake);
+    }
+
+    private static UpdateHandshake ReadHandshake(string updateDirectory)
+    {
+        var path = UpdatePaths.MarkerFile(updateDirectory);
+
+        if (!File.Exists(path))
+            throw new InvalidOperationException("O combinado da atualização não foi encontrado. Inicie a atualização pelo Navegador.");
+
+        var handshake = JsonFileStore.Read<UpdateHandshake?>(path, static () => null);
+        return handshake ?? throw new InvalidOperationException("O combinado da atualização está ilegível.");
     }
 
     private static async Task<ReleaseInfo> GetLatestReleaseAsync()
@@ -164,72 +222,8 @@ internal static class UpdateService
         using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
         response.EnsureSuccessStatusCode();
 
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        using var json = await JsonDocument.ParseAsync(stream);
-
-        var root = json.RootElement;
-        var tagName = root.GetProperty("tag_name").GetString()
-            ?? throw new InvalidOperationException("A release mais recente não possui tag.");
-
-        if (!Version.TryParse(tagName.TrimStart('v', 'V'), out var version))
-            throw new InvalidOperationException($"Versão de release inválida: {tagName}.");
-
-        string? downloadUrl = null;
-        string? expectedSha256 = null;
-        string? checksumUrl = null;
-        long sizeBytes = 0;
-        string? packageName = null;
-
-        foreach (var asset in root.GetProperty("assets").EnumerateArray())
-        {
-            var name = asset.GetProperty("name").GetString() ?? string.Empty;
-
-            if (name.EndsWith(PackageSuffix, StringComparison.OrdinalIgnoreCase))
-            {
-                packageName = name;
-                downloadUrl = asset.GetProperty("browser_download_url").GetString();
-                sizeBytes = asset.TryGetProperty("size", out var size) ? size.GetInt64() : 0;
-
-                if (asset.TryGetProperty("digest", out var digestElement))
-                {
-                    var digest = digestElement.GetString();
-                    if (!string.IsNullOrWhiteSpace(digest) &&
-                        digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        expectedSha256 = digest["sha256:".Length..];
-                    }
-                }
-            }
-        }
-
-        if (downloadUrl is null || packageName is null)
-            throw new InvalidOperationException("A release mais recente não possui pacote Windows x64.");
-
-        foreach (var asset in root.GetProperty("assets").EnumerateArray())
-        {
-            var name = asset.GetProperty("name").GetString() ?? string.Empty;
-            if (name.Equals(packageName + ".sha256", StringComparison.OrdinalIgnoreCase))
-            {
-                checksumUrl = asset.GetProperty("browser_download_url").GetString();
-                break;
-            }
-        }
-
-        EnsureGitHubDownloadUrl(downloadUrl);
-        if (checksumUrl is not null) EnsureGitHubDownloadUrl(checksumUrl);
-
-        return new ReleaseInfo(
-            version,
-            tagName,
-            downloadUrl,
-            expectedSha256,
-            checksumUrl,
-            sizeBytes);
-    }
-
-    private static Version GetCurrentVersion()
-    {
-        return Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
+        var json = await response.Content.ReadAsStringAsync();
+        return ReleaseParser.Parse(json);
     }
 
     private static async Task DownloadFileAsync(string url, string destination)
@@ -252,7 +246,7 @@ internal static class UpdateService
         await source.CopyToAsync(target);
     }
 
-    private static async Task ValidatePackageAsync(
+    private static async Task<string> ValidatePackageAsync(
         string packagePath,
         string? expectedSha256,
         string? checksumUrl)
@@ -267,71 +261,140 @@ internal static class UpdateService
             using var response = await Http.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
-            var checksumText = await response.Content.ReadAsStringAsync();
-            expected = checksumText
-                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
-                .FirstOrDefault();
+            expected = ReleaseParser.ParseChecksumFile(await response.Content.ReadAsStringAsync());
         }
 
         if (string.IsNullOrWhiteSpace(expected))
             throw new InvalidOperationException("A release não possui checksum SHA-256 para validação.");
 
-        await using var stream = File.OpenRead(packagePath);
-        var hash = await SHA256.HashDataAsync(stream);
-        var actual = Convert.ToHexString(hash);
-
-        if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("O arquivo baixado falhou na validação SHA-256.");
+        await UpdateApplyPolicy.EnsurePackageHashAsync(packagePath, expected);
+        return expected;
     }
 
-    private static void ApplyUpdate(int parentProcessId, string packagePath, string installDirectory)
+    private static void ApplyUpdate(
+        int parentProcessId,
+        string packagePath,
+        string installDirectory,
+        string updateDirectory,
+        UpdateHandshake handshake)
     {
         WaitForBrowserToExit(parentProcessId);
 
         if (!File.Exists(packagePath))
             throw new FileNotFoundException("O pacote de atualização não foi encontrado.", packagePath);
 
-        Directory.CreateDirectory(installDirectory);
+        // O hash é conferido de novo aqui: o auxiliar não aceita o pacote só
+        // porque alguém o colocou na pasta de atualizações.
+        UpdateApplyPolicy.EnsurePackageHashAsync(packagePath, handshake.PackageSha256)
+            .GetAwaiter()
+            .GetResult();
 
-        var stagingDirectory = Path.Combine(
-            Path.GetDirectoryName(packagePath) ?? Path.GetTempPath(),
-            "staging");
-
-        if (Directory.Exists(stagingDirectory))
-            Directory.Delete(stagingDirectory, recursive: true);
-
+        var stagingDirectory = UpdatePaths.StagingDirectory(updateDirectory);
+        if (Directory.Exists(stagingDirectory)) Directory.Delete(stagingDirectory, recursive: true);
         Directory.CreateDirectory(stagingDirectory);
+
         ZipFile.ExtractToDirectory(packagePath, stagingDirectory, overwriteFiles: true);
 
         var stagedExecutable = Path.Combine(stagingDirectory, "Navegador.exe");
+
         if (!File.Exists(stagedExecutable))
             throw new InvalidOperationException("O pacote baixado não contém Navegador.exe.");
 
-        foreach (var sourceFile in Directory.EnumerateFiles(stagingDirectory, "*", SearchOption.AllDirectories))
+        if (!UpdateApplyPolicy.LooksLikeWindowsExecutable(stagedExecutable))
+            throw new InvalidOperationException("O Navegador.exe do pacote não parece um executável válido do Windows.");
+
+        var backupDirectory = UpdatePaths.BackupDirectory(updateDirectory);
+        var copied = new List<string>();
+
+        try
         {
-            var relativePath = Path.GetRelativePath(stagingDirectory, sourceFile);
-
-            if (relativePath.Equals("Data", StringComparison.OrdinalIgnoreCase) ||
-                relativePath.StartsWith("Data" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            foreach (var sourceFile in Directory.EnumerateFiles(stagingDirectory, "*", SearchOption.AllDirectories))
             {
-                continue;
-            }
+                var relativePath = Path.GetRelativePath(stagingDirectory, sourceFile);
 
-            var destinationFile = Path.Combine(installDirectory, relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
-            CopyWithRetry(sourceFile, destinationFile);
+                // O perfil do usuário nunca é substituído por um pacote.
+                if (IsProfilePath(relativePath)) continue;
+
+                var destinationFile = Path.Combine(installDirectory, relativePath);
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+
+                Backup(destinationFile, installDirectory, backupDirectory);
+                CopyWithRetry(sourceFile, destinationFile);
+                copied.Add(destinationFile);
+            }
+        }
+        catch
+        {
+            // Nada de deixar a instalação pela metade: qualquer falha de cópia
+            // devolve os arquivos anteriores.
+            Restore(installDirectory, backupDirectory);
+            throw;
         }
 
         var installedExecutable = Path.Combine(installDirectory, "Navegador.exe");
         if (!File.Exists(installedExecutable))
             throw new InvalidOperationException("Navegador.exe não foi encontrado após a atualização.");
 
+        DeleteHandshake(updateDirectory);
         Process.Start(new ProcessStartInfo
         {
             FileName = installedExecutable,
             WorkingDirectory = installDirectory,
             UseShellExecute = true
         });
+    }
+
+    private static bool IsProfilePath(string relativePath)
+    {
+        const string profileFolder = "Data";
+
+        return relativePath.Equals(profileFolder, StringComparison.OrdinalIgnoreCase) ||
+               relativePath.StartsWith(profileFolder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void Backup(string destinationFile, string installDirectory, string backupDirectory)
+    {
+        if (!File.Exists(destinationFile)) return;
+
+        var relativePath = Path.GetRelativePath(installDirectory, destinationFile);
+        var backupFile = Path.Combine(backupDirectory, relativePath);
+
+        Directory.CreateDirectory(Path.GetDirectoryName(backupFile)!);
+        File.Copy(destinationFile, backupFile, overwrite: true);
+    }
+
+    private static void Restore(string installDirectory, string backupDirectory)
+    {
+        try
+        {
+            if (!Directory.Exists(backupDirectory)) return;
+
+            foreach (var backupFile in Directory.EnumerateFiles(backupDirectory, "*", SearchOption.AllDirectories))
+            {
+                var relativePath = Path.GetRelativePath(backupDirectory, backupFile);
+                var destinationFile = Path.Combine(installDirectory, relativePath);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+                CopyWithRetry(backupFile, destinationFile);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Se nem a restauração funcionar, o usuário ainda tem o pacote baixado.
+        }
+    }
+
+    private static void DeleteHandshake(string updateDirectory)
+    {
+        try
+        {
+            var path = UpdatePaths.MarkerFile(updateDirectory);
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // O combinado tem uso único por construção: o token muda a cada atualização.
+        }
     }
 
     private static void WaitForBrowserToExit(int processId)
@@ -375,42 +438,4 @@ internal static class UpdateService
 
         throw new IOException($"Não foi possível substituir {Path.GetFileName(destinationFile)}.", lastError);
     }
-
-    private static string CreateUpdateDirectory(Version version)
-    {
-        var directory = Path.Combine(
-            GetUpdateRoot(),
-            $"{FormatVersion(version)}-{Guid.NewGuid():N}");
-
-        Directory.CreateDirectory(directory);
-        return directory;
-    }
-
-    private static string GetUpdateRoot()
-    {
-        return Path.Combine(Path.GetTempPath(), "Navegador", "Updates");
-    }
-
-    private static string FormatVersion(Version version)
-    {
-        return $"{version.Major}.{version.Minor}.{Math.Max(version.Build, 0)}";
-    }
-
-    private static void EnsureGitHubDownloadUrl(string url)
-    {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
-            !uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
-            !uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("A release retornou uma URL de download inesperada.");
-        }
-    }
-
-    private sealed record ReleaseInfo(
-        Version Version,
-        string TagName,
-        string DownloadUrl,
-        string? ExpectedSha256,
-        string? ChecksumUrl,
-        long SizeBytes);
 }

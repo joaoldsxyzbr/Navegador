@@ -1,0 +1,24 @@
+<Project>
+
+  <!--
+    A versão do produto existe em um único lugar: o arquivo VERSION na raiz.
+    Este props apenas lê esse arquivo para que o SDK, o empacotamento e o
+    workflow de release nunca precisem repetir o número.
+  -->
+  <PropertyGroup>
+    <NavegadorVersionFile>$(MSBuildThisFileDirectory)VERSION</NavegadorVersionFile>
+    <NavegadorVersion Condition="Exists('$(NavegadorVersionFile)')">$([System.IO.File]::ReadAllText('$(NavegadorVersionFile)').Trim())</NavegadorVersion>
+    <NavegadorVersion Condition="'$(NavegadorVersion)' == ''">0.0.0</NavegadorVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>$(NavegadorVersion)</Version>
+    <AssemblyVersion>$(NavegadorVersion).0</AssemblyVersion>
+    <FileVersion>$(NavegadorVersion).0</FileVersion>
+    <InformationalVersion>$(NavegadorVersion)</InformationalVersion>
+    <Product>Navegador</Product>
+    <Company>Navegador</Company>
+    <NeutralLanguage>pt-BR</NeutralLanguage>
+  </PropertyGroup>
+
+</Project>
