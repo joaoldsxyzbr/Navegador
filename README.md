@@ -63,3 +63,4 @@ dotnet run --project desktop/Navegador.Windows/Navegador.Windows.csproj
 - `v0.1.0`: bootstrap Chromium histórico.
 - `v0.2.0`: primeira release WebView2, funcional mas com empacotamento self-contained espalhado em muitos arquivos.
 - `v0.2.1`: reorganização da distribuição para single-file, deixando `Navegador.exe` evidente na raiz do pacote.
+- `v0.3.0`: primeira revisão visual grande do shell, com barra de título própria, abas e omnibox inspiradas no Chrome.

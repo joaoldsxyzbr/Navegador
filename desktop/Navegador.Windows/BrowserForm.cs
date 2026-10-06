@@ -1,3 +1,5 @@
+using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
@@ -5,35 +7,86 @@ namespace Navegador.Windows;
 
 internal sealed class BrowserForm : Form
 {
-    private static readonly Color WindowColor = Color.FromArgb(32, 33, 36);
-    private static readonly Color SurfaceColor = Color.FromArgb(48, 49, 52);
-    private static readonly Color ActiveTabColor = Color.FromArgb(60, 64, 67);
-    private static readonly Color TextColor = Color.FromArgb(232, 234, 237);
+    private const string HomeUrl = "https://www.google.com/";
+    private const int ResizeBorder = 6;
+    private const int WmNcHitTest = 0x0084;
+    private const int WmNcLButtonDown = 0x00A1;
+    private const int HtClient = 1;
+    private const int HtCaption = 2;
+    private const int HtLeft = 10;
+    private const int HtRight = 11;
+    private const int HtTop = 12;
+    private const int HtTopLeft = 13;
+    private const int HtTopRight = 14;
+    private const int HtBottom = 15;
+    private const int HtBottomLeft = 16;
+    private const int HtBottomRight = 17;
 
-    private readonly FlowLayoutPanel _tabHeaders = new()
+    private static readonly Color TitleBarColor = Color.FromArgb(32, 33, 36);
+    private static readonly Color ToolbarColor = Color.FromArgb(41, 42, 45);
+    private static readonly Color ActiveTabColor = Color.FromArgb(53, 54, 58);
+    private static readonly Color AddressColor = Color.FromArgb(48, 49, 52);
+    private static readonly Color AddressFocusColor = Color.FromArgb(57, 58, 62);
+    private static readonly Color HoverColor = Color.FromArgb(60, 64, 67);
+    private static readonly Color PressColor = Color.FromArgb(74, 76, 80);
+    private static readonly Color TextColor = Color.FromArgb(232, 234, 237);
+    private static readonly Color MutedTextColor = Color.FromArgb(154, 160, 166);
+    private static readonly Color CloseHoverColor = Color.FromArgb(196, 43, 28);
+
+    private readonly FlowLayoutPanel _tabStrip = new()
     {
         Dock = DockStyle.Fill,
-        AutoScroll = true,
+        AutoScroll = false,
         WrapContents = false,
-        BackColor = WindowColor,
-        Padding = new Padding(4, 4, 0, 0)
+        BackColor = TitleBarColor,
+        Padding = new Padding(6, 0, 0, 0),
+        Margin = Padding.Empty
     };
-    private readonly Panel _pageHost = new() { Dock = DockStyle.Fill, BackColor = Color.White };
+
+    private readonly Panel _pageHost = new()
+    {
+        Dock = DockStyle.Fill,
+        BackColor = Color.White,
+        Margin = Padding.Empty
+    };
+
     private readonly TextBox _address = new()
     {
-        Anchor = AnchorStyles.Left | AnchorStyles.Right,
-        BackColor = SurfaceColor,
+        Dock = DockStyle.Fill,
+        BackColor = AddressColor,
         ForeColor = TextColor,
-        BorderStyle = BorderStyle.FixedSingle,
-        Font = new Font("Segoe UI", 10F),
-        PlaceholderText = "Pesquisar ou digitar endereço"
+        BorderStyle = BorderStyle.None,
+        Font = new Font("Segoe UI", 10.25F),
+        PlaceholderText = "Pesquisar no Google ou digitar um URL",
+        AutoSize = false,
+        Margin = Padding.Empty
     };
-    private readonly Button _backButton;
-    private readonly Button _forwardButton;
-    private readonly Button _reloadButton;
-    private readonly Button _goButton;
-    private readonly Button _extensionsButton;
+
+    private readonly RoundedPanel _addressShell = new(18)
+    {
+        Dock = DockStyle.Fill,
+        BackColor = AddressColor,
+        Padding = new Padding(14, 8, 14, 6),
+        Margin = new Padding(8, 4, 8, 4)
+    };
+
+    private readonly ToolTip _toolTip = new()
+    {
+        AutomaticDelay = 450,
+        AutoPopDelay = 5000,
+        ReshowDelay = 100
+    };
+
     private readonly List<BrowserTab> _tabs = [];
+    private readonly ChromeIconButton _newTabButton;
+    private readonly ChromeIconButton _backButton;
+    private readonly ChromeIconButton _forwardButton;
+    private readonly ChromeIconButton _reloadButton;
+    private readonly ChromeIconButton _extensionsButton;
+    private readonly ChromeIconButton _menuButton;
+    private readonly Button _maximizeButton;
+    private readonly ContextMenuStrip _browserMenu;
+
     private Task<CoreWebView2Environment>? _environmentTask;
     private BrowserTab? _activeTab;
     private int _nextTabNumber = 1;
@@ -41,111 +94,233 @@ internal sealed class BrowserForm : Form
     public BrowserForm()
     {
         Text = "Navegador";
-        MinimumSize = new Size(720, 480);
-        Size = new Size(1280, 820);
+        MinimumSize = new Size(820, 560);
+        Size = new Size(1360, 860);
         StartPosition = FormStartPosition.CenterScreen;
-        BackColor = WindowColor;
+        BackColor = TitleBarColor;
         ForeColor = TextColor;
+        FormBorderStyle = FormBorderStyle.None;
         KeyPreview = true;
+        DoubleBuffered = true;
 
-        var tabsBar = new Panel { Dock = DockStyle.Fill, BackColor = WindowColor };
-        var newTabButton = CreateButton("+", "Nova aba");
-        newTabButton.Dock = DockStyle.Right;
-        newTabButton.Width = 44;
-        newTabButton.Click += async (_, _) => await AddTabAsync();
-        tabsBar.Controls.Add(_tabHeaders);
-        tabsBar.Controls.Add(newTabButton);
+        _newTabButton = CreateIconButton("+", "Nova guia", TitleBarColor, new Font("Segoe UI", 14F));
+        _newTabButton.Size = new Size(34, 34);
+        _newTabButton.Margin = new Padding(4, 4, 0, 4);
+        _newTabButton.Click += async (_, _) => await AddTabAsync();
+        _tabStrip.Controls.Add(_newTabButton);
+        _tabStrip.MouseDown += BeginWindowDrag;
+        _tabStrip.DoubleClick += (_, _) => ToggleMaximize();
 
-        var toolbar = new Panel { Dock = DockStyle.Fill, BackColor = WindowColor };
-        _backButton = CreateButton("‹", "Voltar");
-        _forwardButton = CreateButton("›", "Avançar");
-        _reloadButton = CreateButton("⟳", "Recarregar");
-        var homeButton = CreateButton("⌂", "Nova guia");
-        _goButton = CreateButton("Ir", "Abrir endereço");
-        _extensionsButton = CreateButton("Ext", "Extensões");
-        _goButton.Width = 48;
-        _extensionsButton.Width = 48;
+        var minimizeButton = CreateWindowButton("—", "Minimizar");
+        _maximizeButton = CreateWindowButton("□", "Maximizar");
+        var closeButton = CreateWindowButton("×", "Fechar", closeButton: true);
 
-        _backButton.SetBounds(6, 5, 36, 36);
-        _forwardButton.SetBounds(44, 5, 36, 36);
-        _reloadButton.SetBounds(82, 5, 36, 36);
-        homeButton.SetBounds(120, 5, 36, 36);
-        _address.SetBounds(162, 8, 900, 30);
-        _goButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        _extensionsButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        _goButton.SetBounds(0, 5, 48, 36);
-        _extensionsButton.SetBounds(0, 5, 48, 36);
+        minimizeButton.Click += (_, _) => WindowState = FormWindowState.Minimized;
+        _maximizeButton.Click += (_, _) => ToggleMaximize();
+        closeButton.Click += (_, _) => Close();
+
+        var titleRow = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 4,
+            RowCount = 1,
+            BackColor = TitleBarColor,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
+        };
+        titleRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        titleRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 46));
+        titleRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 46));
+        titleRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 46));
+        titleRow.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        titleRow.Controls.Add(_tabStrip, 0, 0);
+        titleRow.Controls.Add(minimizeButton, 1, 0);
+        titleRow.Controls.Add(_maximizeButton, 2, 0);
+        titleRow.Controls.Add(closeButton, 3, 0);
+
+        _backButton = CreateIconButton("←", "Voltar", ToolbarColor);
+        _forwardButton = CreateIconButton("→", "Avançar", ToolbarColor);
+        _reloadButton = CreateIconButton("↻", "Recarregar", ToolbarColor, new Font("Segoe UI Symbol", 13F));
+        _extensionsButton = CreateIconButton("🧩", "Extensões", ToolbarColor, new Font("Segoe UI Emoji", 10.5F));
+        _menuButton = CreateIconButton("⋮", "Menu", ToolbarColor, new Font("Segoe UI", 15F));
 
         _backButton.Click += (_, _) => NavigateBack();
         _forwardButton.Click += (_, _) => NavigateForward();
         _reloadButton.Click += (_, _) => _activeTab?.View.CoreWebView2?.Reload();
-        homeButton.Click += (_, _) => NavigateToHome();
-        _goButton.Click += (_, _) => NavigateAddress();
         _extensionsButton.Click += (_, _) => OpenExtensions();
+
+        _browserMenu = BuildBrowserMenu();
+        _menuButton.Click += (_, _) => _browserMenu.Show(_menuButton, new Point(0, _menuButton.Height));
+
+        _addressShell.Controls.Add(_address);
+        _address.Enter += (_, _) =>
+        {
+            _addressShell.BackColor = AddressFocusColor;
+            _address.BackColor = AddressFocusColor;
+        };
+        _address.Leave += (_, _) =>
+        {
+            _addressShell.BackColor = AddressColor;
+            _address.BackColor = AddressColor;
+        };
         _address.KeyDown += (_, eventArgs) =>
         {
             if (eventArgs.KeyCode != Keys.Enter) return;
             eventArgs.SuppressKeyPress = true;
             NavigateAddress();
         };
-        toolbar.Controls.AddRange([_backButton, _forwardButton, _reloadButton, homeButton, _address, _extensionsButton, _goButton]);
 
-        var layout = new TableLayoutPanel
+        var toolbar = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 6,
+            RowCount = 1,
+            BackColor = ToolbarColor,
+            Margin = Padding.Empty,
+            Padding = new Padding(6, 2, 6, 2)
+        };
+        toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
+        toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
+        toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
+        toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
+        toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
+        toolbar.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        toolbar.Controls.Add(_backButton, 0, 0);
+        toolbar.Controls.Add(_forwardButton, 1, 0);
+        toolbar.Controls.Add(_reloadButton, 2, 0);
+        toolbar.Controls.Add(_addressShell, 3, 0);
+        toolbar.Controls.Add(_extensionsButton, 4, 0);
+        toolbar.Controls.Add(_menuButton, 5, 0);
+
+        var root = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             RowCount = 3,
-            BackColor = WindowColor,
+            BackColor = TitleBarColor,
             Margin = Padding.Empty,
             Padding = Padding.Empty
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.Controls.Add(tabsBar, 0, 0);
-        layout.Controls.Add(toolbar, 0, 1);
-        layout.Controls.Add(_pageHost, 0, 2);
-        Controls.Add(layout);
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.Controls.Add(titleRow, 0, 0);
+        root.Controls.Add(toolbar, 0, 1);
+        root.Controls.Add(_pageHost, 0, 2);
+        Controls.Add(root);
 
-        Resize += (_, _) => LayoutAddressBar();
-        Shown += async (_, _) => await AddTabAsync();
+        LocationChanged += (_, _) => UpdateMaximizedBounds();
+        Resize += (_, _) =>
+        {
+            _maximizeButton.Text = WindowState == FormWindowState.Maximized ? "❐" : "□";
+            Padding = WindowState == FormWindowState.Maximized ? Padding.Empty : new Padding(1);
+        };
+        Shown += async (_, _) =>
+        {
+            UpdateMaximizedBounds();
+            await AddTabAsync();
+        };
     }
 
-    private void LayoutAddressBar()
+    private ChromeIconButton CreateIconButton(string text, string accessibleName, Color background, Font? font = null)
     {
-        var width = Math.Max(160, ClientSize.Width - 330);
-        _address.Width = width;
-        _extensionsButton.Left = ClientSize.Width - 112;
-        _goButton.Left = ClientSize.Width - 58;
+        var button = new ChromeIconButton
+        {
+            Text = text,
+            AccessibleName = accessibleName,
+            Dock = DockStyle.Fill,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = background,
+            ForeColor = TextColor,
+            Font = font ?? new Font("Segoe UI", 11.5F),
+            TextAlign = ContentAlignment.MiddleCenter,
+            UseVisualStyleBackColor = false,
+            Margin = new Padding(3, 4, 3, 4),
+            Cursor = Cursors.Hand
+        };
+        button.FlatAppearance.BorderSize = 0;
+        button.FlatAppearance.MouseOverBackColor = HoverColor;
+        button.FlatAppearance.MouseDownBackColor = PressColor;
+        _toolTip.SetToolTip(button, accessibleName);
+        return button;
     }
 
-    private static Button CreateButton(string text, string accessibleName)
+    private Button CreateWindowButton(string text, string accessibleName, bool closeButton = false)
     {
         var button = new Button
         {
             Text = text,
             AccessibleName = accessibleName,
+            Dock = DockStyle.Fill,
             FlatStyle = FlatStyle.Flat,
-            BackColor = WindowColor,
+            BackColor = TitleBarColor,
             ForeColor = TextColor,
-            Font = new Font("Segoe UI", 10F),
+            Font = new Font("Segoe UI", closeButton ? 13F : 10F),
             TextAlign = ContentAlignment.MiddleCenter,
-            UseVisualStyleBackColor = false
+            UseVisualStyleBackColor = false,
+            Margin = Padding.Empty
         };
         button.FlatAppearance.BorderSize = 0;
-        button.FlatAppearance.MouseOverBackColor = ActiveTabColor;
+        button.FlatAppearance.MouseOverBackColor = closeButton ? CloseHoverColor : HoverColor;
+        button.FlatAppearance.MouseDownBackColor = closeButton ? CloseHoverColor : PressColor;
+        _toolTip.SetToolTip(button, accessibleName);
         return button;
+    }
+
+    private ContextMenuStrip BuildBrowserMenu()
+    {
+        var menu = new ContextMenuStrip
+        {
+            BackColor = ActiveTabColor,
+            ForeColor = TextColor,
+            ShowImageMargin = false,
+            Font = new Font("Segoe UI", 10F),
+            Padding = new Padding(4)
+        };
+
+        var newTabItem = new ToolStripMenuItem("Nova guia");
+        newTabItem.Click += async (_, _) => await AddTabAsync();
+
+        var extensionsItem = new ToolStripMenuItem("Extensões");
+        extensionsItem.Click += (_, _) => OpenExtensions();
+
+        var closeTabItem = new ToolStripMenuItem("Fechar guia");
+        closeTabItem.Click += (_, _) =>
+        {
+            if (_activeTab is not null) CloseTab(_activeTab);
+        };
+
+        foreach (var item in new[] { newTabItem, extensionsItem, closeTabItem })
+        {
+            item.BackColor = ActiveTabColor;
+            item.ForeColor = TextColor;
+        }
+
+        menu.Items.Add(newTabItem);
+        menu.Items.Add(extensionsItem);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(closeTabItem);
+        return menu;
     }
 
     private async Task AddTabAsync(string? initialAddress = null)
     {
-        var view = new WebView2 { Dock = DockStyle.Fill };
+        var view = new WebView2
+        {
+            Dock = DockStyle.Fill,
+            DefaultBackgroundColor = Color.FromArgb(32, 33, 36)
+        };
+
         var tab = new BrowserTab(_nextTabNumber++, view);
+        _toolTip.SetToolTip(tab.CloseButton, "Fechar guia");
         tab.SelectButton.Click += (_, _) => ActivateTab(tab);
         tab.CloseButton.Click += (_, _) => CloseTab(tab);
+
         _tabs.Add(tab);
-        _tabHeaders.Controls.Add(tab.Header);
+        _tabStrip.Controls.Add(tab.Header);
+        _tabStrip.Controls.SetChildIndex(_newTabButton, _tabStrip.Controls.Count - 1);
         _pageHost.Controls.Add(view);
         ActivateTab(tab);
 
@@ -154,7 +329,7 @@ internal sealed class BrowserForm : Form
             var environment = await GetEnvironmentAsync();
             await view.EnsureCoreWebView2Async(environment);
             AttachBrowserEvents(tab);
-            view.CoreWebView2.Navigate(initialAddress ?? "about:blank");
+            view.CoreWebView2.Navigate(initialAddress ?? HomeUrl);
         }
         catch (Exception exception)
         {
@@ -180,6 +355,7 @@ internal sealed class BrowserForm : Form
         {
             AreBrowserExtensionsEnabled = true
         };
+
         return CoreWebView2Environment.CreateAsync(
             userDataFolder: GetProfileDirectory(),
             options: options);
@@ -197,8 +373,12 @@ internal sealed class BrowserForm : Form
         var profile = _activeTab?.View.CoreWebView2?.Profile;
         if (profile is null)
         {
-            MessageBox.Show(this, "Aguarde a aba terminar de iniciar.", "Extensões",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(
+                this,
+                "Aguarde a guia terminar de iniciar.",
+                "Extensões",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
             return;
         }
 
@@ -209,38 +389,53 @@ internal sealed class BrowserForm : Form
     private void AttachBrowserEvents(BrowserTab tab)
     {
         var core = tab.View.CoreWebView2;
+
         core.NavigationStarting += (_, eventArgs) =>
         {
             if (_activeTab == tab) _address.Text = eventArgs.Uri;
             UpdateNavigationButtons(tab);
         };
+
         core.SourceChanged += (_, _) =>
         {
             if (_activeTab == tab) _address.Text = core.Source;
         };
+
         core.DocumentTitleChanged += (_, _) => UpdateTabTitle(tab);
+
         core.NavigationCompleted += (_, _) =>
         {
             UpdateTabTitle(tab);
             UpdateNavigationButtons(tab);
             if (_activeTab == tab) _address.Text = core.Source;
         };
+
+        core.NewWindowRequested += (_, eventArgs) =>
+        {
+            eventArgs.Handled = true;
+            _ = AddTabAsync(eventArgs.Uri);
+        };
     }
 
     private void ActivateTab(BrowserTab tab)
     {
         _activeTab = tab;
+
         foreach (var item in _tabs)
         {
-            item.Header.BackColor = item == tab ? ActiveTabColor : SurfaceColor;
-            item.SelectButton.BackColor = item == tab ? ActiveTabColor : SurfaceColor;
-            item.View.Visible = item == tab;
+            var active = item == tab;
+            var background = active ? ActiveTabColor : TitleBarColor;
+            item.Header.BackColor = background;
+            item.SelectButton.BackColor = background;
+            item.SelectButton.FlatAppearance.MouseOverBackColor = active ? ActiveTabColor : HoverColor;
+            item.CloseButton.BackColor = background;
+            item.CloseButton.Visible = active;
+            item.View.Visible = active;
         }
 
         tab.View.BringToFront();
         _address.Text = tab.View.Source?.ToString() ?? string.Empty;
         UpdateNavigationButtons(tab);
-        UpdateWindowTitle(tab);
     }
 
     private void CloseTab(BrowserTab tab)
@@ -249,7 +444,7 @@ internal sealed class BrowserForm : Form
         if (index < 0) return;
 
         _tabs.Remove(tab);
-        _tabHeaders.Controls.Remove(tab.Header);
+        _tabStrip.Controls.Remove(tab.Header);
         _pageHost.Controls.Remove(tab.View);
         tab.View.Dispose();
         tab.Header.Dispose();
@@ -268,23 +463,22 @@ internal sealed class BrowserForm : Form
     {
         var title = tab.View.CoreWebView2?.DocumentTitle;
         tab.SelectButton.Text = string.IsNullOrWhiteSpace(title)
-            ? $"Nova guia {tab.Number}"
-            : Shorten(title, 20);
-        if (_activeTab == tab) UpdateWindowTitle(tab);
-    }
-
-    private void UpdateWindowTitle(BrowserTab tab)
-    {
-        var title = tab.View.CoreWebView2?.DocumentTitle;
-        Text = string.IsNullOrWhiteSpace(title) ? "Navegador" : $"{title} — Navegador";
+            ? "Nova guia"
+            : Shorten(title, 26);
     }
 
     private void UpdateNavigationButtons(BrowserTab tab)
     {
         var core = tab.View.CoreWebView2;
-        _backButton.Enabled = core?.CanGoBack ?? false;
-        _forwardButton.Enabled = core?.CanGoForward ?? false;
-        _reloadButton.Enabled = core is not null;
+        SetNavigationState(_backButton, core?.CanGoBack ?? false);
+        SetNavigationState(_forwardButton, core?.CanGoForward ?? false);
+        SetNavigationState(_reloadButton, core is not null);
+    }
+
+    private static void SetNavigationState(Button button, bool enabled)
+    {
+        button.Enabled = enabled;
+        button.ForeColor = enabled ? TextColor : MutedTextColor;
     }
 
     private void NavigateAddress()
@@ -324,13 +518,33 @@ internal sealed class BrowserForm : Form
         if (core?.CanGoForward == true) core.GoForward();
     }
 
-    private void NavigateToHome()
+    private void ToggleMaximize()
     {
-        if (_activeTab?.View.CoreWebView2 is { } core)
+        if (WindowState == FormWindowState.Maximized)
         {
-            core.Navigate("about:blank");
-            _address.Focus();
+            WindowState = FormWindowState.Normal;
+            return;
         }
+
+        UpdateMaximizedBounds();
+        WindowState = FormWindowState.Maximized;
+    }
+
+    private void UpdateMaximizedBounds()
+    {
+        if (!IsHandleCreated) return;
+        MaximizedBounds = Screen.FromHandle(Handle).WorkingArea;
+    }
+
+    private void BeginWindowDrag(object? sender, MouseEventArgs eventArgs)
+    {
+        if (eventArgs.Button != MouseButtons.Left) return;
+
+        if (WindowState == FormWindowState.Maximized)
+            WindowState = FormWindowState.Normal;
+
+        ReleaseCapture();
+        SendMessage(Handle, WmNcLButtonDown, (IntPtr)HtCaption, IntPtr.Zero);
     }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -341,36 +555,80 @@ internal sealed class BrowserForm : Form
             _address.SelectAll();
             return true;
         }
+
         if (keyData == (Keys.Control | Keys.T))
         {
             _ = AddTabAsync();
             return true;
         }
+
         if (keyData == (Keys.Control | Keys.W))
         {
             if (_activeTab is not null) CloseTab(_activeTab);
             return true;
         }
+
         if (keyData == (Keys.Control | Keys.R))
         {
             _activeTab?.View.CoreWebView2?.Reload();
             return true;
         }
+
         if (keyData == (Keys.Alt | Keys.Left))
         {
             NavigateBack();
             return true;
         }
+
         if (keyData == (Keys.Alt | Keys.Right))
         {
             NavigateForward();
             return true;
         }
+
         return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    protected override void WndProc(ref Message m)
+    {
+        if (m.Msg == WmNcHitTest && WindowState == FormWindowState.Normal)
+        {
+            base.WndProc(ref m);
+            if ((int)m.Result != HtClient) return;
+
+            var packed = m.LParam.ToInt64();
+            var screenPoint = new Point(
+                unchecked((short)(packed & 0xFFFF)),
+                unchecked((short)((packed >> 16) & 0xFFFF)));
+            var clientPoint = PointToClient(screenPoint);
+
+            var left = clientPoint.X <= ResizeBorder;
+            var right = clientPoint.X >= ClientSize.Width - ResizeBorder;
+            var top = clientPoint.Y <= ResizeBorder;
+            var bottom = clientPoint.Y >= ClientSize.Height - ResizeBorder;
+
+            if (left && top) m.Result = (IntPtr)HtTopLeft;
+            else if (right && top) m.Result = (IntPtr)HtTopRight;
+            else if (left && bottom) m.Result = (IntPtr)HtBottomLeft;
+            else if (right && bottom) m.Result = (IntPtr)HtBottomRight;
+            else if (left) m.Result = (IntPtr)HtLeft;
+            else if (right) m.Result = (IntPtr)HtRight;
+            else if (top) m.Result = (IntPtr)HtTop;
+            else if (bottom) m.Result = (IntPtr)HtBottom;
+            return;
+        }
+
+        base.WndProc(ref m);
     }
 
     private static string Shorten(string value, int length) =>
         value.Length <= length ? value : value[..(length - 1)] + "…";
+
+    [DllImport("user32.dll")]
+    private static extern bool ReleaseCapture();
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
     private sealed class BrowserTab
     {
@@ -378,37 +636,119 @@ internal sealed class BrowserForm : Form
         {
             Number = number;
             View = view;
-            Header = new Panel
+
+            Header = new RoundedPanel(11)
             {
-                Width = 190,
-                Height = 32,
-                Margin = new Padding(2, 0, 2, 0),
-                BackColor = SurfaceColor
+                Width = 220,
+                Height = 36,
+                Margin = new Padding(3, 6, 0, 0),
+                BackColor = TitleBarColor
             };
+
             SelectButton = new Button
             {
                 Dock = DockStyle.Fill,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = SurfaceColor,
+                BackColor = TitleBarColor,
                 ForeColor = TextColor,
-                Font = new Font("Segoe UI", 9F),
-                Text = $"Nova guia {number}",
+                Font = new Font("Segoe UI", 9.5F),
+                Text = "Nova guia",
                 TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(8, 0, 0, 0),
-                UseVisualStyleBackColor = false
+                Padding = new Padding(12, 0, 0, 0),
+                UseVisualStyleBackColor = false,
+                Cursor = Cursors.Hand
             };
             SelectButton.FlatAppearance.BorderSize = 0;
-            CloseButton = CreateButton("×", "Fechar aba");
-            CloseButton.Dock = DockStyle.Right;
-            CloseButton.Width = 32;
+            SelectButton.FlatAppearance.MouseOverBackColor = HoverColor;
+
+            CloseButton = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 34,
+                Text = "×",
+                AccessibleName = "Fechar guia",
+                FlatStyle = FlatStyle.Flat,
+                BackColor = TitleBarColor,
+                ForeColor = TextColor,
+                Font = new Font("Segoe UI", 11F),
+                TextAlign = ContentAlignment.MiddleCenter,
+                UseVisualStyleBackColor = false,
+                Cursor = Cursors.Hand
+            };
+            CloseButton.FlatAppearance.BorderSize = 0;
+            CloseButton.FlatAppearance.MouseOverBackColor = HoverColor;
+            CloseButton.FlatAppearance.MouseDownBackColor = PressColor;
+
             Header.Controls.Add(SelectButton);
             Header.Controls.Add(CloseButton);
         }
 
         public int Number { get; }
         public WebView2 View { get; }
-        public Panel Header { get; }
+        public RoundedPanel Header { get; }
         public Button SelectButton { get; }
         public Button CloseButton { get; }
+    }
+
+    private sealed class RoundedPanel : Panel
+    {
+        private readonly int _radius;
+
+        public RoundedPanel(int radius)
+        {
+            _radius = radius;
+            SetStyle(ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
+        }
+
+        protected override void OnResize(EventArgs eventArgs)
+        {
+            base.OnResize(eventArgs);
+            UpdateRoundedRegion();
+        }
+
+        private void UpdateRoundedRegion()
+        {
+            if (Width <= 0 || Height <= 0) return;
+            using var path = CreateRoundedPath(new Rectangle(0, 0, Width, Height), _radius);
+            Region?.Dispose();
+            Region = new Region(path);
+        }
+
+        private static GraphicsPath CreateRoundedPath(Rectangle bounds, int radius)
+        {
+            var path = new GraphicsPath();
+            var diameter = Math.Min(radius * 2, Math.Min(bounds.Width, bounds.Height));
+            if (diameter <= 1)
+            {
+                path.AddRectangle(bounds);
+                return path;
+            }
+
+            var arc = new Rectangle(bounds.X, bounds.Y, diameter, diameter);
+            path.AddArc(arc, 180, 90);
+            arc.X = bounds.Right - diameter;
+            path.AddArc(arc, 270, 90);
+            arc.Y = bounds.Bottom - diameter;
+            path.AddArc(arc, 0, 90);
+            arc.X = bounds.Left;
+            path.AddArc(arc, 90, 90);
+            path.CloseFigure();
+            return path;
+        }
+    }
+
+    private sealed class ChromeIconButton : Button
+    {
+        protected override void OnResize(EventArgs eventArgs)
+        {
+            base.OnResize(eventArgs);
+            if (Width <= 0 || Height <= 0) return;
+
+            var diameter = Math.Min(Width, Height);
+            using var path = new GraphicsPath();
+            path.AddEllipse((Width - diameter) / 2, (Height - diameter) / 2, diameter, diameter);
+            Region?.Dispose();
+            Region = new Region(path);
+        }
     }
 }
