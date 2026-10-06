@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   release:
-    name: Publicar Navegador v0.2.0
-    if: contains(github.event.head_commit.message, '[publish-v0.2.0]')
+    name: Publicar Navegador v0.2.1
+    if: contains(github.event.head_commit.message, '[publish-v0.2.1]')
     runs-on: windows-latest
     timeout-minutes: 20
 
@@ -27,83 +27,90 @@ jobs:
       - name: Restaurar dependências
         run: dotnet restore desktop/Navegador.Windows/Navegador.Windows.csproj -r win-x64
 
-      - name: Publicar Windows x64
+      - name: Publicar Windows x64 em arquivo único
         run: >
           dotnet publish desktop/Navegador.Windows/Navegador.Windows.csproj
           --configuration Release
           --runtime win-x64
           --self-contained true
           --no-restore
-          -p:Version=0.2.0
+          -p:Version=0.2.1
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:PublishTrimmed=false
           -p:DebugType=None
           -p:DebugSymbols=false
           --output publish/Navegador
+
+      - name: Limpar arquivos de documentação técnica
+        shell: pwsh
+        run: |
+          Get-ChildItem publish/Navegador -Recurse -File -Include *.xml,*.pdb | Remove-Item -Force
+
+      - name: Validar pacote simples
+        shell: pwsh
+        run: |
+          if (-not (Test-Path publish/Navegador/Navegador.exe)) {
+            throw "Navegador.exe não foi gerado na raiz do pacote."
+          }
+
+          $files = @(Get-ChildItem publish/Navegador -Recurse -File)
+          $files | ForEach-Object { Write-Host $_.FullName }
+
+          if ($files.Count -gt 2) {
+            throw "O pacote ainda ficou poluído: $($files.Count) arquivos de runtime. Esperado: Navegador.exe e, no máximo, um loader nativo."
+          }
 
       - name: Adicionar instruções ao pacote
         shell: pwsh
         run: |
           @"
-          Navegador v0.2.0
+          NAVEGADOR v0.2.1
 
-          Esta é a primeira versão testável da nova base WebView2.
+          PARA ABRIR:
+          Dê dois cliques em Navegador.exe.
 
-          Como usar:
-          1. Extraia todo o conteúdo do ZIP para uma pasta com permissão de escrita.
-          2. Execute Navegador.exe.
-          3. O perfil será criado em Data\WebView2 ao lado do executável.
+          O Navegador.exe fica nesta mesma pasta, sem precisar procurar dentro de subpastas.
 
           Requisito:
           - Microsoft Edge WebView2 Runtime instalado no Windows.
 
-          Incluído neste protótipo:
-          - abas;
-          - voltar, avançar e recarregar;
-          - barra de endereço e pesquisa;
-          - tema escuro;
-          - perfil persistente portátil;
-          - gerenciamento experimental de extensões Chromium por pasta descompactada.
-
-          Ainda não incluído:
-          - instalação direta pela Chrome Web Store;
-          - favoritos e histórico visíveis;
-          - gerenciador de downloads;
-          - janela privada;
-          - atualizador integrado.
+          Dados portáteis:
+          - o perfil será criado em Data\WebView2 ao lado do Navegador.exe.
           "@ | Set-Content -Encoding UTF8 publish/Navegador/LEIA-ME.txt
 
       - name: Empacotar
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
-          Compress-Archive -Path publish/Navegador/* -DestinationPath dist/Navegador-v0.2.0-windows-x64.zip -CompressionLevel Optimal
-          $hash = (Get-FileHash dist/Navegador-v0.2.0-windows-x64.zip -Algorithm SHA256).Hash.ToLower()
-          "$hash  Navegador-v0.2.0-windows-x64.zip" | Set-Content -Encoding ascii dist/Navegador-v0.2.0-windows-x64.zip.sha256
+          Compress-Archive -Path publish/Navegador/* -DestinationPath dist/Navegador-v0.2.1-windows-x64.zip -CompressionLevel Optimal
+          $hash = (Get-FileHash dist/Navegador-v0.2.1-windows-x64.zip -Algorithm SHA256).Hash.ToLower()
+          "$hash  Navegador-v0.2.1-windows-x64.zip" | Set-Content -Encoding ascii dist/Navegador-v0.2.1-windows-x64.zip.sha256
 
       - name: Preparar notas da release
         shell: pwsh
         run: |
           @"
-          ## Navegador v0.2.0
+          ## Navegador v0.2.1
 
-          Primeira versão testável da nova arquitetura **C# + WinForms + WebView2**.
+          Release de organização da distribuição Windows.
 
-          ### Incluído
-          - abas e navegação básica;
-          - barra de endereço com pesquisa;
-          - tema escuro e primeira interface inspirada no Chrome;
-          - perfil persistente em `Data/WebView2`;
-          - extensões WebView2 habilitadas;
-          - instalação de extensões Chromium por pasta local descompactada;
-          - ativar, desativar e remover extensões;
-          - pacote Windows x64 self-contained para não exigir instalação separada do .NET 10.
+          ### O que mudou
+          - o app agora é publicado como **single-file self-contained**;
+          - `Navegador.exe` fica diretamente na raiz do ZIP;
+          - removida a floresta de DLLs do .NET que aparecia na v0.2.0;
+          - o workflow falha automaticamente se o pacote voltar a sair poluído;
+          - instruções de uso ficam ao lado do executável.
+
+          ### Como usar
+          1. Baixe `Navegador-v0.2.1-windows-x64.zip`.
+          2. Extraia o ZIP.
+          3. Abra `Navegador.exe`.
 
           ### Requisito
           O **Microsoft Edge WebView2 Runtime** precisa estar instalado no Windows.
 
-          ### Limitações conhecidas
-          A instalação direta pela Chrome Web Store, ícones/popups de extensões, favoritos, histórico visível, downloads, janela privada e atualizador integrado ainda não fazem parte desta versão.
-
-          Esta release é destinada a validação do MVP no Windows.
+          Esta versão mantém as funcionalidades WebView2 da v0.2.0; a mudança principal é tornar o pacote portátil realmente simples de usar.
           "@ | Set-Content -Encoding UTF8 release-notes.md
 
       - name: Criar release no GitHub
@@ -111,9 +118,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.2.0 `
-            dist/Navegador-v0.2.0-windows-x64.zip `
-            dist/Navegador-v0.2.0-windows-x64.zip.sha256 `
+          gh release create v0.2.1 `
+            dist/Navegador-v0.2.1-windows-x64.zip `
+            dist/Navegador-v0.2.1-windows-x64.zip.sha256 `
             --target "${{ github.sha }}" `
-            --title "Navegador v0.2.0" `
+            --title "Navegador v0.2.1" `
             --notes-file release-notes.md
