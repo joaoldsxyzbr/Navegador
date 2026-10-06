@@ -160,7 +160,7 @@ public static class StoreTests
                 {
                     Tabs =
                     [
-                        new SessionTab { Url = "https://a.com", Title = "A" },
+                        new SessionTab { Url = "https://a.com", Title = "A", IsPinned = true },
                         new SessionTab { Url = "javascript:alert(1)", Title = "Ruim" },
                         new SessionTab { Url = "https://b.com", Title = "B" }
                     ],
@@ -173,6 +173,8 @@ public static class StoreTests
                 Assert.Equal(2, loaded.Tabs.Count);
                 Assert.Equal("https://a.com", loaded.Tabs[0].Url);
                 Assert.Equal("https://b.com", loaded.Tabs[1].Url);
+                Assert.True(loaded.Tabs[0].IsPinned);
+                Assert.False(loaded.Tabs[1].IsPinned);
                 // A aba ativa era a última; ao descartar a inválida ela virou a segunda.
                 Assert.Equal(1, loaded.ActiveIndex);
             }

@@ -33,12 +33,61 @@ internal sealed partial class BrowserForm
     private static readonly IntPtr CursorSizeNs = LoadCursor(IntPtr.Zero, 32645); // IDC_SIZENS
 
     private int _lastHitTest = HtClient;
+    private bool _isFullscreen;
+    private FormWindowState _windowStateBeforeFullscreen;
+    private Rectangle _boundsBeforeFullscreen;
+    private float _titleRowBeforeFullscreen;
+    private float _toolbarRowBeforeFullscreen;
+    private bool _downloadsVisibleBeforeFullscreen;
 
     private void ToggleMaximize()
     {
+        if (_isFullscreen) return;
         WindowState = WindowState == FormWindowState.Maximized
             ? FormWindowState.Normal
             : FormWindowState.Maximized;
+    }
+
+    private void ToggleFullscreen()
+    {
+        if (_rootLayout is null) return;
+
+        if (!_isFullscreen)
+        {
+            _windowStateBeforeFullscreen = WindowState;
+            _boundsBeforeFullscreen = WindowState == FormWindowState.Maximized ? RestoreBounds : Bounds;
+            _titleRowBeforeFullscreen = _rootLayout.RowStyles[0].Height;
+            _toolbarRowBeforeFullscreen = _rootLayout.RowStyles[1].Height;
+            _downloadsVisibleBeforeFullscreen = _downloadsBar.Visible;
+
+            _isFullscreen = true;
+            WindowState = FormWindowState.Normal;
+            _rootLayout.SuspendLayout();
+            _rootLayout.RowStyles[0].Height = 0;
+            _rootLayout.RowStyles[1].Height = 0;
+            _favoritesRowStyle.Height = 0;
+            _rootLayout.RowStyles[4].Height = 0;
+            _favoritesBar.Visible = false;
+            _downloadsBar.Visible = false;
+            _rootLayout.ResumeLayout(performLayout: true);
+            Padding = Padding.Empty;
+            Bounds = Screen.FromControl(this).Bounds;
+            return;
+        }
+
+        _isFullscreen = false;
+        WindowState = FormWindowState.Normal;
+        Bounds = _boundsBeforeFullscreen;
+        _rootLayout.SuspendLayout();
+        _rootLayout.RowStyles[0].Height = _titleRowBeforeFullscreen;
+        _rootLayout.RowStyles[1].Height = _toolbarRowBeforeFullscreen;
+        _favoritesRowStyle.Height = _favorites.Count > 0 ? 32 : 0;
+        _rootLayout.RowStyles[4].Height = _downloadsVisibleBeforeFullscreen ? _downloadsBar.Height : 0;
+        _favoritesBar.Visible = _favorites.Count > 0;
+        _downloadsBar.Visible = _downloadsVisibleBeforeFullscreen;
+        _rootLayout.ResumeLayout(performLayout: true);
+        WindowState = _windowStateBeforeFullscreen;
+        Padding = WindowState == FormWindowState.Maximized ? Padding.Empty : new Padding(1);
     }
 
     private void BeginWindowDrag(object? sender, MouseEventArgs eventArgs)

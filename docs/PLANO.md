@@ -26,18 +26,19 @@ Linha Windows em C# / WinForms / .NET 10 + WebView2. O código está em 0.5.0 em
 
 ## Fase 3 — Polimento
 
-- [ ] Favicons nas abas/favoritos.
-- [ ] Arrastar/reordenar abas.
-- [ ] Fixar abas.
-- [ ] Autocomplete da omnibox usando histórico.
+- [x] Favicons nas abas.
+- [x] Arrastar/reordenar abas.
+- [x] Fixar abas.
+- [x] Autocomplete da omnibox usando favoritos e histórico.
 - [ ] Menu de contexto de página.
-- [ ] Janela privada e limpeza de dados.
+- [x] Janela privada e limpeza de dados.
+- [x] Modo de tela cheia com F11/Esc.
 - [ ] Refinar visual com screenshots reais em Windows.
 
 ## Fase 4 — Distribuição
 
-- [ ] Resolver experiência para PC sem WebView2 Runtime.
-- [ ] Instalador opcional mantendo pacote portátil.
+- [x] Oferecer a página oficial do WebView2 Runtime quando ele não está instalado.
+- [x] Instalador opcional por usuário mantendo o ZIP portátil.
 - [ ] Assinatura de código.
 
 ## Fase 5 — Mobile

@@ -56,8 +56,19 @@ jobs:
       - name: Restaurar dependências
         run: dotnet restore desktop/Navegador.Windows/Navegador.Windows.csproj -r win-x64
 
-      - name: Compilar
-        run: dotnet build desktop/Navegador.Windows/Navegador.Windows.csproj --configuration Release --runtime win-x64 --no-restore
+      - name: Publicar app para validar os pacotes
+        run: dotnet publish desktop/Navegador.Windows/Navegador.Windows.csproj --configuration Release --runtime win-x64 --no-restore --output publish/Navegador
+
+      - name: Compilar instalador opcional
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          $compiler = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $compiler)) { throw "Inno Setup não está disponível no runner: $compiler" }
+          & $compiler "/DAppVersion=$version" installer/Rumo.iss
+          if ($LASTEXITCODE -ne 0) { throw "A compilação do instalador falhou." }
+          $installer = "dist/Rumo-v$version-windows-x64-setup.exe"
+          if (-not (Test-Path $installer)) { throw "O instalador não foi gerado: $installer" }
 
       - name: Conferir se a versão publicada veio do arquivo VERSION
         shell: pwsh

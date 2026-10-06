@@ -8,14 +8,12 @@ O Rumo é um navegador para Windows, com a organização familiar do Chrome e mo
 
 ## Baixar e usar
 
-A distribuição Windows é portátil e foi simplificada para deixar o executável evidente.
+Cada release oferece duas opções: instalador por usuário e ZIP portátil.
 
-1. Abra a página de **Releases** do repositório.
-2. Baixe o ZIP Windows x64 da versão mais recente.
-3. Extraia o ZIP inteiro.
-4. Abra **`Navegador.exe`**, que fica diretamente na raiz da pasta extraída.
+- **Instalador**: execute o arquivo `Rumo-v…-setup.exe` e siga as etapas. Ele cria atalhos no menu Iniciar e, se você escolher, na área de trabalho. Não exige elevação de administrador.
+- **Portátil**: baixe o ZIP, extraia a pasta inteira e abra `Navegador.exe`.
 
-O aplicativo é publicado como **single-file self-contained**, então o .NET 10 não precisa ser instalado separadamente. O Microsoft Edge WebView2 Runtime continua sendo necessário para renderizar as páginas.
+Os dois pacotes são single-file e self-contained; o .NET 10 não precisa ser instalado separadamente. O Microsoft Edge WebView2 Runtime é necessário para renderizar páginas. Se ele faltar, o Rumo oferece abrir a página oficial para instalação.
 
 ## Onde ficam os dados
 
@@ -29,7 +27,7 @@ O Rumo tenta manter tudo em `Data\` ao lado do executável, para continuar port�
 | `Data\history.json` | histórico de navegação |
 | `Data\settings.json` | preferências |
 
-Se essa pasta não puder ser criada — por exemplo, quando o app é extraído dentro de `Program Files` sem permissão de escrita — os dados vão para `%LOCALAPPDATA%\Navegador` e a tela **Configurações** mostra qual modo está em uso. O perfil do WebView2 acompanha a mesma decisão, então nunca ficam dois perfis diferentes em uso.
+No ZIP portátil, os dados ficam junto do executável em `Data\`. No instalador por usuário, ficam em `%LOCALAPPDATA%\Navegador`, fora da pasta instalada. Se não puder gravar na pasta portátil, o Rumo usa o mesmo perfil local. A tela **Configurações** mostra qual modo está em uso, e o perfil do WebView2 acompanha essa escolha. Desinstalar o aplicativo preserva os dados do usuário.
 
 ## Direção
 
@@ -41,7 +39,9 @@ A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 
 ## O que o protótipo já faz
 
-- abas, com criação, troca, fechamento e `Ctrl+Tab`;
+- abas com criação, troca, fechamento, favicons, fixação pelo menu de contexto e reordenação por arraste;
+- modo de tela cheia com `F11` e saída por `Esc`;
+- sugestões de favoritos e histórico na barra de endereço, navegáveis pelas setas do teclado;
 - voltar, avançar, recarregar e parar;
 - barra de endereço com busca (endereço sem esquema vira `https://`, texto livre vira busca);
 - tema escuro e shell próprio, com barra de título desenhada pelo app;
@@ -49,6 +49,7 @@ A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 - **sessão**: as abas voltam na próxima abertura (desligável em Configurações);
 - **favoritos**: estrela na barra, barra de favoritos e uma janela para renomear e remover;
 - **histórico**: registro das visitas, com busca, remoção e limpeza total;
+- **privacidade**: janela InPrivate que não salva histórico nem sessão e não compartilha cookies com o perfil normal; limpeza dos dados do perfil com confirmação;
 - **downloads**: pasta de destino configurável, faixa de downloads na parte de baixo e janela com abrir, abrir pasta e cancelar;
 - **configurações**: sessão, pasta de downloads, pergunta de destino e página inicial;
 - instância única, para duas cópias não escreverem a mesma sessão;
@@ -60,8 +61,8 @@ A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 ## Limites conhecidos
 
 - **Extensões**: o WebView2 não oferece a Chrome Web Store nem a janela de popup do ícone na barra. Extensões que dependem de popup (gerenciadores de senha, bloqueadores com painel) carregam, mas não podem ser operadas pela interface. A tela de extensões diz isso ao usuário.
-- **Abas**: ainda não há favicon, agrupamento, fixação nem arrastar para reordenar; reabrir aba fechada já funciona com `Ctrl+Shift+T`.
-- **Privacidade**: não há janela anônima nem limpeza de dados pela interface.
+- **Abas**: ainda não há grupos de abas; reabrir aba fechada funciona com `Ctrl+Shift+T`.
+- **Instalador**: a instalação é por usuário e não tem assinatura de código nesta release.
 - **Sincronização** entre máquinas não existe.
 - **Android/iOS**: fora do escopo desta etapa.
 
@@ -71,7 +72,7 @@ A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 - .NET 10 SDK;
 - Microsoft Edge WebView2 Runtime.
 
-O WebView2 Runtime é pré-instalado no Windows 11 e na maioria dos Windows 10 atualizados. O projeto mostra um erro com o endereço oficial se o Runtime não estiver disponível.
+O WebView2 Runtime costuma estar disponível no Windows 11 e em instalações atualizadas do Windows 10. Se estiver faltando, o Rumo mostra uma opção para abrir a página oficial de instalação.
 
 ## Estrutura do repositório
 
@@ -129,4 +130,4 @@ O script grava o `VERSION`, roda os testes, cria o commit e a etiqueta `v0.5.0`,
 - `v0.2.1`: reorganização da distribuição para single-file, deixando `Navegador.exe` evidente na raiz do pacote.
 - `v0.3.0`: primeira revisão visual grande do shell, com barra de título própria, abas e omnibox inspiradas no Chrome.
 - `v0.4.0`: atualização integrada de um clique usando GitHub Releases.
-- `0.5.0 (em preparação)`: Core separado e testável, sessão, favoritos, histórico, downloads, configurações, nova guia própria, shell refinado, instância única e atualizador endurecido. A versão só vira release depois de CI verde e tag `v0.5.0`.
+- `0.5.0 (em preparação)`: modo InPrivate, limpeza de dados, favicons e controles de abas, sugestões na omnibox, tela cheia e instalador opcional; inclui também o Core separado, sessão, favoritos, histórico, downloads, nova guia e atualização integrada. A versão só vira release depois de CI verde e tag `v0.5.0`.

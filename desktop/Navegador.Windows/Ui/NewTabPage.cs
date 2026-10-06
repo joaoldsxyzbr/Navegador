@@ -7,7 +7,7 @@ namespace Navegador.Windows.Ui;
 
 internal static class NewTabPage
 {
-    public static string Build(IReadOnlyList<Favorite> favorites)
+    public static string Build(IReadOnlyList<Favorite> favorites, bool isPrivate = false)
     {
         var shortcuts = new StringBuilder();
 
@@ -27,6 +27,9 @@ internal static class NewTabPage
         var shortcutsBlock = shortcuts.Length == 0
             ? """<div class="empty">Seus favoritos aparecerão aqui.</div>"""
             : shortcuts.ToString();
+        var privateNotice = isPrivate
+            ? """<div class="privacy-note">O histórico e as abas desta janela não serão salvos no perfil normal.</div>"""
+            : string.Empty;
 
         const string template = """
 <!doctype html>
@@ -45,13 +48,13 @@ main{width:min(760px,calc(100% - 48px));margin:0 auto;padding-top:clamp(92px,17v
 .search-icon{width:18px;height:18px;border:2px solid var(--muted);border-radius:50%;position:relative;flex:0 0 auto}.search-icon:after{content:"";position:absolute;width:7px;height:2px;background:var(--muted);right:-5px;bottom:-2px;transform:rotate(45deg);border-radius:2px}
 input{width:100%;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:16px}input::placeholder{color:var(--muted)}
 .shortcut-grid{margin:34px auto 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:560px}.shortcut{min-width:0;height:94px;border:0;border-radius:14px;background:transparent;color:var(--text);cursor:pointer;padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}
-.shortcut:hover,.shortcut:focus-visible{background:rgba(255,255,255,.07);outline:none}.shortcut-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:var(--surface);color:var(--accent);font-weight:600;font-size:15px;text-transform:uppercase}.shortcut-title{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.empty{grid-column:1/-1;color:var(--muted);font-size:13px;padding:18px}.hint{margin-top:24px;color:var(--muted);font-size:12px}
+.shortcut:hover,.shortcut:focus-visible{background:rgba(255,255,255,.07);outline:none}.shortcut-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:var(--surface);color:var(--accent);font-weight:600;font-size:15px;text-transform:uppercase}.shortcut-title{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.empty{grid-column:1/-1;color:var(--muted);font-size:13px;padding:18px}.hint{margin-top:24px;color:var(--muted);font-size:12px}.privacy-note{margin:18px auto 0;color:var(--muted);font-size:13px}
 @media(max-width:560px){.shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body><main><div class="brand"><span class="mark" aria-hidden="true">__BRAND_MARK__</span><span>__BRAND_NAME__</span></div>
 <form class="search" id="search-form" autocomplete="off"><span class="search-icon" aria-hidden="true"></span><input id="query" autofocus spellcheck="false" placeholder="Pesquisar no Google ou digitar um endereço" aria-label="Pesquisar ou digitar endereço"></form>
-<div class="shortcut-grid">__SHORTCUTS__</div><div class="hint">Ctrl+L seleciona a barra de endereço · Ctrl+T abre uma nova guia</div></main>
+<div class="shortcut-grid">__SHORTCUTS__</div>__PRIVATE_NOTICE__<div class="hint">Ctrl+L seleciona a barra de endereço · Ctrl+T abre uma nova guia</div></main>
 <script>
 const send=value=>{const trimmed=(value||"").trim();if(!trimmed)return;window.chrome.webview.postMessage({type:"navigate",value:trimmed})};
 document.getElementById("search-form").addEventListener("submit",e=>{e.preventDefault();send(document.getElementById("query").value)});
@@ -61,6 +64,7 @@ document.querySelectorAll("[data-url]").forEach(button=>button.addEventListener(
 
         return template
             .Replace("__SHORTCUTS__", shortcutsBlock, StringComparison.Ordinal)
+            .Replace("__PRIVATE_NOTICE__", privateNotice, StringComparison.Ordinal)
             .Replace("__BRAND_MARK__", Branding.MarkSvg, StringComparison.Ordinal)
             .Replace("__BRAND_NAME__", Branding.Name, StringComparison.Ordinal);
     }

@@ -53,6 +53,7 @@ public static class TestRunner
 
     public static IEnumerable<TestCase> AllCases =>
         AddressResolverTests.Cases
+            .Concat(AddressSuggestionTests.Cases)
             .Concat(StoreTests.Cases)
             .Concat(UpdateTests.Cases);
 }

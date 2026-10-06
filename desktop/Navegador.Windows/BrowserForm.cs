@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 using Navegador.Core;
@@ -47,6 +48,19 @@ internal sealed partial class BrowserForm : Form
         Margin = Padding.Empty
     };
 
+    private readonly ListBox _addressSuggestions = new()
+    {
+        Visible = false,
+        IntegralHeight = false,
+        DrawMode = DrawMode.OwnerDrawFixed,
+        ItemHeight = 48,
+        BorderStyle = BorderStyle.FixedSingle,
+        BackColor = ActiveTabColor,
+        ForeColor = TextColor,
+        Font = Theme.Ui(9F),
+        TabStop = false
+    };
+
     private readonly TextBox _address = new()
     {
         Dock = DockStyle.Fill,
@@ -94,20 +108,26 @@ internal sealed partial class BrowserForm : Form
     private readonly WindowButton _maximizeButton;
     private readonly ContextMenuStrip _browserMenu;
     private readonly RowStyle _favoritesRowStyle;
+    private readonly bool _isPrivate;
+    private TableLayoutPanel? _rootLayout;
+    private BrowserTab? _dragCandidate;
+    private Point _dragStartPoint;
+    private DateTimeOffset? _historyClearedAt;
 
-    private Task<CoreWebView2Environment>? _environmentTask;
+    private static Task<CoreWebView2Environment>? _environmentTask;
     private BrowserTab? _activeTab;
     private bool _closingForGood;
 
-    public BrowserForm()
+    public BrowserForm(bool isPrivate = false)
     {
+        _isPrivate = isPrivate;
         _settings = SettingsStore.Load();
         _favorites = FavoritesStore.Load();
         _history = HistoryStore.Load();
         _downloads = new DownloadManager(_settings);
         _downloadsBar = new DownloadsBar(_downloads);
 
-        Text = AppName;
+        Text = _isPrivate ? $"Navegação privada — {AppName}" : AppName;
         Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
         MinimumSize = new Size(860, 560);
         Size = new Size(1360, 860);
@@ -122,6 +142,21 @@ internal sealed partial class BrowserForm : Form
         _newTabButton.Size = new Size(34, 34);
         _newTabButton.Margin = new Padding(4, 4, 0, 4);
         _newTabButton.Click += async (_, _) => await AddTabAsync();
+        if (_isPrivate)
+        {
+            _tabStrip.Controls.Add(new Label
+            {
+                Text = "Privada",
+                Width = 64,
+                Height = 30,
+                Margin = new Padding(8, 8, 0, 0),
+                BackColor = Theme.Hover,
+                ForeColor = Theme.Accent,
+                Font = Theme.Ui(8.5F),
+                TextAlign = ContentAlignment.MiddleCenter,
+                AccessibleName = "Janela privada"
+            });
+        }
         _tabStrip.Controls.Add(_newTabButton);
         _tabStrip.MouseDown += BeginWindowDrag;
         _tabStrip.DoubleClick += (_, _) => ToggleMaximize();
@@ -157,6 +192,7 @@ internal sealed partial class BrowserForm : Form
         _forwardButton = CreateIconButton(BrowserIcon.Forward, "Avançar", ToolbarColor);
         _reloadButton = CreateIconButton(BrowserIcon.Reload, "Recarregar", ToolbarColor);
         _bookmarkButton = CreateIconButton(BrowserIcon.Star, "Adicionar aos favoritos", ToolbarColor);
+        _bookmarkButton.Enabled = !_isPrivate;
         _downloadsButton = CreateIconButton(BrowserIcon.Download, "Downloads", ToolbarColor);
         _updateButton = CreateIconButton(BrowserIcon.Update, $"Atualizar {AppName}", ToolbarColor);
         _extensionsButton = CreateIconButton(BrowserIcon.Extensions, "Extensões", ToolbarColor);
@@ -187,6 +223,24 @@ internal sealed partial class BrowserForm : Form
             _addressShell.BackColor = AddressColor;
             _addressShell.BorderColor = Theme.AddressBorder;
             _address.BackColor = AddressColor;
+            if (IsHandleCreated && !IsDisposed)
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    if (!_address.Focused && !_addressSuggestions.Focused)
+                        _addressSuggestions.Visible = false;
+                }));
+            }
+        };
+        _address.TextChanged += (_, _) => RefreshAddressSuggestions();
+        _addressSuggestions.DrawItem += DrawAddressSuggestion;
+        _addressSuggestions.MouseDown += (_, eventArgs) =>
+        {
+            if (eventArgs.Button != MouseButtons.Left) return;
+            var index = _addressSuggestions.IndexFromPoint(eventArgs.Location);
+            if (index < 0 || index >= _addressSuggestions.Items.Count) return;
+            _addressSuggestions.SelectedIndex = index;
+            NavigateSelectedSuggestion();
         };
         _address.KeyDown += (_, eventArgs) =>
         {
@@ -253,12 +307,16 @@ internal sealed partial class BrowserForm : Form
         _downloadsBar.Height = 120;
         _downloadsBar.Visible = false;
 
+        _rootLayout = root;
         Controls.Add(root);
+        Controls.Add(_addressSuggestions);
+        _addressSuggestions.BringToFront();
+        Deactivate += (_, _) => _addressSuggestions.Visible = false;
 
         Resize += (_, _) =>
         {
             _maximizeButton.Text = WindowState == FormWindowState.Maximized ? "❐" : "□";
-            Padding = WindowState == FormWindowState.Maximized ? Padding.Empty : new Padding(1);
+            Padding = _isFullscreen || WindowState == FormWindowState.Maximized ? Padding.Empty : new Padding(1);
         };
 
         Shown += async (_, _) =>

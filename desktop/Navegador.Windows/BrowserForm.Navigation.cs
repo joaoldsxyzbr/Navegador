@@ -19,7 +19,9 @@ internal sealed partial class BrowserForm
 
         core.NavigationStarting += (_, eventArgs) =>
         {
+            tab.LastNavigationStartedAt = DateTimeOffset.UtcNow;
             if (tab.IsInternalNewTab && !NewTabPage.IsInternalSource(eventArgs.Uri)) tab.IsInternalNewTab = false;
+            SetTabFavicon(tab, null);
             if (tab == _activeTab) _address.Text = tab.IsInternalNewTab ? string.Empty : eventArgs.Uri;
             UpdateNavigationButtons(tab);
         };
@@ -28,6 +30,8 @@ internal sealed partial class BrowserForm
         {
             if (tab == _activeTab) _address.Text = tab.IsInternalNewTab ? string.Empty : core.Source;
         };
+
+        core.FaviconChanged += async (_, _) => await UpdateTabFaviconAsync(tab);
 
         core.DocumentTitleChanged += (_, _) =>
         {
@@ -87,10 +91,87 @@ internal sealed partial class BrowserForm
 
     private void NavigateAddress()
     {
-        var input = _address.Text.Trim();
+        if (_addressSuggestions.Visible && _addressSuggestions.SelectedItem is AddressSuggestion suggestion)
+        {
+            NavigateAddress(suggestion.Url);
+            return;
+        }
+
+        NavigateAddress(_address.Text);
+    }
+
+    private void NavigateAddress(string input)
+    {
+        input = input.Trim();
+        _addressSuggestions.Visible = false;
         if (input.Length == 0 || ActiveCore is not { } core) return;
 
+        if (!string.Equals(_address.Text, input, StringComparison.Ordinal)) _address.Text = input;
         core.Navigate(AddressResolver.Resolve(input));
+    }
+
+    private void NavigateSelectedSuggestion()
+    {
+        if (_addressSuggestions.SelectedItem is AddressSuggestion suggestion)
+            NavigateAddress(suggestion.Url);
+    }
+
+    private void RefreshAddressSuggestions()
+    {
+        if (!_address.Focused || _isFullscreen || string.IsNullOrWhiteSpace(_address.Text))
+        {
+            _addressSuggestions.Visible = false;
+            return;
+        }
+
+        IEnumerable<HistoryEntry> history = _isPrivate ? Enumerable.Empty<HistoryEntry>() : _history.Items;
+        var suggestions = AddressSuggestionResolver.Suggest(_address.Text, _favorites.Items, history);
+        _addressSuggestions.BeginUpdate();
+        _addressSuggestions.Items.Clear();
+        foreach (var suggestion in suggestions) _addressSuggestions.Items.Add(suggestion);
+        _addressSuggestions.EndUpdate();
+
+        if (suggestions.Count == 0)
+        {
+            _addressSuggestions.Visible = false;
+            return;
+        }
+
+        _addressSuggestions.SelectedIndex = -1;
+        var location = PointToClient(_addressShell.PointToScreen(new Point(0, _addressShell.Height + 2)));
+        var availableHeight = ClientSize.Height - location.Y - 8;
+        if (availableHeight < _addressSuggestions.ItemHeight)
+        {
+            _addressSuggestions.Visible = false;
+            return;
+        }
+
+        _addressSuggestions.Location = location;
+        _addressSuggestions.Width = _addressShell.Width;
+        _addressSuggestions.Height = Math.Min(suggestions.Count * _addressSuggestions.ItemHeight, availableHeight);
+        _addressSuggestions.Visible = true;
+        _addressSuggestions.BringToFront();
+    }
+
+    private void DrawAddressSuggestion(object? sender, DrawItemEventArgs eventArgs)
+    {
+        if (eventArgs.Index < 0 || eventArgs.Index >= _addressSuggestions.Items.Count) return;
+
+        var suggestion = (AddressSuggestion)_addressSuggestions.Items[eventArgs.Index]!;
+        var selected = (eventArgs.State & DrawItemState.Selected) != 0;
+        using var background = new SolidBrush(selected ? HoverColor : ActiveTabColor);
+        eventArgs.Graphics.FillRectangle(background, eventArgs.Bounds);
+
+        var titleFont = _addressSuggestions.Font;
+        using var detailFont = new Font(titleFont.FontFamily, 8F, FontStyle.Regular);
+        var titleBounds = new Rectangle(eventArgs.Bounds.X + 12, eventArgs.Bounds.Y + 5, eventArgs.Bounds.Width - 24, 19);
+        var detailBounds = new Rectangle(eventArgs.Bounds.X + 12, eventArgs.Bounds.Y + 25, eventArgs.Bounds.Width - 24, 17);
+        TextRenderer.DrawText(eventArgs.Graphics, suggestion.Title, titleFont, titleBounds, TextColor,
+            TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+        var detail = suggestion.IsFavorite ? $"Favorito  ·  {suggestion.Url}" : suggestion.Url;
+        TextRenderer.DrawText(eventArgs.Graphics, detail, detailFont, detailBounds, Theme.MutedText,
+            TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+        eventArgs.DrawFocusRectangle();
     }
 
     private void NavigateBack()
@@ -119,7 +200,8 @@ internal sealed partial class BrowserForm
     /// <summary>Registra a visita no histórico e mantém o arquivo atualizado.</summary>
     private void RecordVisit(BrowserTab tab)
     {
-        if (!IsAlive(tab)) return;
+        if (_isPrivate || !IsAlive(tab)) return;
+        if (_historyClearedAt is { } clearedAt && tab.LastNavigationStartedAt <= clearedAt) return;
 
         var core = tab.View.CoreWebView2;
         var url = core?.Source;
@@ -137,7 +219,7 @@ internal sealed partial class BrowserForm
 
     private void UpdateHistoryTitle(BrowserTab tab)
     {
-        if (!IsAlive(tab)) return;
+        if (_isPrivate || !IsAlive(tab)) return;
         var core = tab.View.CoreWebView2;
         var url = core?.Source;
         var title = core?.DocumentTitle;
@@ -147,6 +229,7 @@ internal sealed partial class BrowserForm
 
     private void ToggleFavoriteForActiveTab()
     {
+        if (_isPrivate) return;
         var url = ActiveCore?.Source;
         if (!AddressResolver.IsPersistable(url))
         {

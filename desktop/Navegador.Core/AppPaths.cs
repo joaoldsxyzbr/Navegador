@@ -3,10 +3,9 @@ namespace Navegador.Core;
 /// <summary>
 /// Diretórios de dados do Navegador.
 ///
-/// O app é portátil: os dados ficam em <c>Data</c> ao lado do executável.
-/// Quando essa pasta não pode ser criada (por exemplo, o app foi extraído em
-/// uma pasta somente leitura ou em Program Files sem elevação), caímos para
-/// <c>%LOCALAPPDATA%\Navegador</c> em vez de falhar na inicialização.
+/// A versão portátil guarda os dados em <c>Data</c> ao lado do executável.
+/// A instalação usa <c>%LOCALAPPDATA%\Navegador</c> para manter o perfil fora da pasta do app.
+/// Se a pasta portátil não puder ser gravada, ela também usa esse perfil local.
 /// </summary>
 public static class AppPaths
 {
@@ -51,8 +50,12 @@ public static class AppPaths
     {
         // Dentro de um único processo a decisão precisa ser estável: se o modo
         // portátil funciona, tudo vai para Data; senão, tudo vai para LOCALAPPDATA.
-        var portable = Path.Combine(BaseDirectory, PortableFolderName);
-        if (IsUsable(portable)) return portable;
+        var installedMarker = Path.Combine(BaseDirectory, ".rumo-installed");
+        if (!File.Exists(installedMarker))
+        {
+            var portable = Path.Combine(BaseDirectory, PortableFolderName);
+            if (IsUsable(portable)) return portable;
+        }
 
         var fallback = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
