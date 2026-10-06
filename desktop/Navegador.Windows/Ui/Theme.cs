@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Drawing.Drawing2D;
 
 namespace Navegador.Windows.Ui;
@@ -38,12 +39,16 @@ internal sealed class RoundedPanel : Panel
                  ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
     }
 
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal Color BorderColor
     {
         get => _borderColor;
         set { if (_borderColor != value) { _borderColor = value; Invalidate(); } }
     }
 
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal float BorderWidth
     {
         get => _borderWidth;
@@ -76,8 +81,14 @@ internal class IconButton : Button
     private bool _hovered;
     private bool _pressed;
 
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal BrowserIcon Icon { get; set; }
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal Color HoverColor { get; set; } = Theme.Hover;
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     internal Color PressColor { get; set; } = Theme.Press;
 
     public IconButton()
