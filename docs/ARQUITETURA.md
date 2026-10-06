@@ -41,7 +41,7 @@ O Navegador define a pasta de destino, evita sobrescrever silenciosamente arquiv
 
 ## Extensões
 
-Extensões Chromium locais descompactadas podem ser instaladas, ativadas e removidas. A API do WebView2 recebe a pasta local da extensão; ela não inclui a interface da Chrome Web Store nem os botões e popups da barra de um navegador completo. Instalação direta da loja exigiria definir a aquisição, validação e atualização dos pacotes e como hospedar a interface das extensões.
+Extensões Chromium locais descompactadas podem ser instaladas, ativadas e removidas. A API do WebView2 recebe a pasta local da extensão; ela não inclui a interface da Chrome Web Store nem os botões e popups da barra de um navegador completo. Instalação direta da loja exige definir aquisição, validação, atualização dos pacotes e interface. A proposta de prova de conceito para reavaliar o motor está em [Avaliação do motor para extensões](DECISOES/001-motor-para-extensoes.md); até essa validação, o motor usado permanece WebView2.
 
 ## Publicação
 
