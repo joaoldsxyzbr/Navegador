@@ -115,7 +115,9 @@ A versão do produto existe em um único lugar: o arquivo `VERSION`. O MSBuild l
 pwsh scripts/release.ps1 0.5.0 -Push
 ```
 
-O script grava o `VERSION`, roda os testes, cria o commit e a etiqueta `v0.5.0`, e envia. O workflow **Release Windows** dispara com a etiqueta, confere que ela combina com o `VERSION`, publica o pacote e cria a release. Sem etiqueta, não há release.
+O script grava o `VERSION`, roda os testes, cria o commit e a etiqueta `v0.5.0`, e envia. O workflow **Release Windows** dispara com a etiqueta, confere que ela combina com o `VERSION`, publica o pacote e cria a release.
+
+Como alternativa operacional pelo próprio GitHub, uma branch `release/vX.Y.Z` apontando para o commit final também dispara o mesmo workflow. Ele valida `VERSION`, cria a tag `vX.Y.Z` ao publicar a release e mantém o pacote gerado vinculado ao commit exato.
 
 ## Documentação
 
@@ -130,4 +132,4 @@ O script grava o `VERSION`, roda os testes, cria o commit e a etiqueta `v0.5.0`,
 - `v0.2.1`: reorganização da distribuição para single-file, deixando `Navegador.exe` evidente na raiz do pacote.
 - `v0.3.0`: primeira revisão visual grande do shell, com barra de título própria, abas e omnibox inspiradas no Chrome.
 - `v0.4.0`: atualização integrada de um clique usando GitHub Releases.
-- `0.5.0 (em preparação)`: modo InPrivate, limpeza de dados, favicons e controles de abas, sugestões na omnibox, tela cheia e instalador opcional; inclui também o Core separado, sessão, favoritos, histórico, downloads, nova guia e atualização integrada. A versão só vira release depois de CI verde e tag `v0.5.0`.
+- `v0.5.0`: marca Rumo, correção da maximização, modo InPrivate, limpeza de dados, favicons e controles de abas, sugestões na omnibox, tela cheia e instalador opcional; inclui também o Core separado, sessão, favoritos, histórico, downloads, nova guia e atualização integrada.

@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+    branches:
+      - 'release/v*.*.*'
 
 permissions:
   contents: write
@@ -30,8 +32,16 @@ jobs:
         run: |
           $version = (Get-Content VERSION -Raw).Trim()
           if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "VERSION inválido: '$version'." }
-          if ("${{ github.ref_name }}" -ne "v$version") { throw "A tag ${{ github.ref_name }} não combina com VERSION ($version)." }
+          $tag = "v$version"
+          if ("${{ github.ref_type }}" -eq "tag") {
+            if ("${{ github.ref_name }}" -ne $tag) { throw "A tag ${{ github.ref_name }} não combina com VERSION ($version)." }
+          } elseif ("${{ github.ref_type }}" -eq "branch") {
+            if ("${{ github.ref_name }}" -ne "release/$tag") { throw "A branch ${{ github.ref_name }} não combina com VERSION ($version)." }
+          } else {
+            throw "Tipo de referência não suportado: ${{ github.ref_type }}."
+          }
           "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
       - name: Rodar testes do Core
         run: dotnet run --project desktop/Navegador.Tests/Navegador.Tests.csproj --configuration Release
       - name: Restaurar dependências
@@ -111,7 +121,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          $tag = "${{ github.ref_name }}"
+          $tag = "${{ steps.version.outputs.tag }}"
           $files = @(
             "dist/Rumo-v$version-windows-x64.zip",
             "dist/Rumo-v$version-windows-x64.zip.sha256",
