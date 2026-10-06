@@ -62,7 +62,7 @@ Decisões relevantes de arquitetura, UX, segurança e manutenção seguem um pro
 
 ## Limites conhecidos
 
-- **Extensões**: o WebView2 não oferece a Chrome Web Store nem a janela de popup do ícone na barra. Extensões que dependem de popup (gerenciadores de senha, bloqueadores com painel) carregam, mas não podem ser operadas pela interface. A tela de extensões diz isso ao usuário.
+- **Extensões**: o Rumo instala extensões Chromium a partir de pastas locais descompactadas e permite ativar, desativar e remover. O WebView2 não inclui a interface da Chrome Web Store nem os botões e popups das extensões; por isso, esse fluxo ainda não equivale ao do Brave. Uma integração direta com a loja exige uma decisão técnica própria para aquisição, validação e atualização dos pacotes, além da interface das extensões.
 - **Abas**: ainda não há grupos de abas; reabrir aba fechada funciona com `Ctrl+Shift+T`.
 - **Instalador**: a instalação é por usuário e não tem assinatura de código nesta release.
 - **Sincronização** entre máquinas não existe.
@@ -124,6 +124,7 @@ Como alternativa operacional pelo próprio GitHub, uma branch `release/vX.Y.Z` a
 ## Documentação
 
 - [Arquitetura](docs/ARQUITETURA.md)
+- [Avaliação do motor para extensões](docs/DECISOES/001-motor-para-extensoes.md)
 - [Requisitos](docs/REQUISITOS.md)
 - [Plano](docs/PLANO.md)
 - [Referências open source](docs/REFERENCIAS-OPEN-SOURCE.md)
