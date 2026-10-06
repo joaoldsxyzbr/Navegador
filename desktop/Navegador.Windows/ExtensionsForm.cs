@@ -35,7 +35,7 @@ internal sealed class ExtensionsForm : Form
         ForeColor = Theme.MutedText,
         Font = Theme.Ui(10F),
         TextAlign = ContentAlignment.MiddleCenter,
-        AccessibleRole = AccessibleRole.Status
+        AccessibleRole = AccessibleRole.StaticText
     };
     private readonly Label _status = new()
     {

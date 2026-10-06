@@ -38,7 +38,7 @@ internal abstract class BrowserListForm : Form
         BackColor = Theme.Address,
         Font = Theme.Ui(11F),
         TextAlign = ContentAlignment.MiddleCenter,
-        AccessibleRole = AccessibleRole.Status
+        AccessibleRole = AccessibleRole.StaticText
     };
 
     private readonly Dictionary<string, ListViewItem> _rows = new(StringComparer.Ordinal);
@@ -278,7 +278,7 @@ internal abstract class BrowserListForm : Form
         var textBounds = Rectangle.Inflate(eventArgs.Bounds, -10, 0);
         TextRenderer.DrawText(
             eventArgs.Graphics,
-            eventArgs.Header.Text,
+            eventArgs.Header?.Text ?? string.Empty,
             List.Font,
             textBounds,
             Theme.Text,
@@ -300,14 +300,14 @@ internal abstract class BrowserListForm : Form
 
     private void DrawListSubItem(object? sender, DrawListViewSubItemEventArgs eventArgs)
     {
-        var selected = eventArgs.Item.Selected;
+        var selected = eventArgs.Item?.Selected == true;
         using var background = new SolidBrush(selected ? Theme.AddressFocus : Theme.Address);
         eventArgs.Graphics.FillRectangle(background, eventArgs.Bounds);
 
         var textBounds = Rectangle.Inflate(eventArgs.Bounds, -10, 0);
         TextRenderer.DrawText(
             eventArgs.Graphics,
-            eventArgs.SubItem.Text,
+            eventArgs.SubItem?.Text ?? string.Empty,
             List.Font,
             textBounds,
             Theme.Text,
