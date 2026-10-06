@@ -16,14 +16,19 @@ internal static class NewTabPage
             var url = WebUtility.HtmlEncode(favorite.Url);
             var title = WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(favorite.Title) ? favorite.Url : favorite.Title);
             var initial = WebUtility.HtmlEncode(Initial(favorite.Title, favorite.Url));
-            shortcuts.Append($"""<button class="shortcut" type="button" data-url="{url}" title="{title}"><span class="shortcut-icon">{initial}</span><span class="shortcut-title">{title}</span></button>""");
+
+            shortcuts.Append(
+                "<button class=\"shortcut\" type=\"button\" data-url=\"" + url + "\" title=\"" + title + "\">" +
+                "<span class=\"shortcut-icon\">" + initial + "</span>" +
+                "<span class=\"shortcut-title\">" + title + "</span>" +
+                "</button>");
         }
 
         var shortcutsBlock = shortcuts.Length == 0
             ? """<div class="empty">Seus favoritos aparecerão aqui.</div>"""
             : shortcuts.ToString();
 
-        return $$"""
+        const string template = """
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -46,29 +51,37 @@ input{width:100%;border:0;outline:0;background:transparent;color:var(--text);fon
 </head>
 <body><main><div class="brand"><span class="mark" aria-hidden="true"></span><span>Navegador</span></div>
 <form class="search" id="search-form" autocomplete="off"><span class="search-icon" aria-hidden="true"></span><input id="query" autofocus spellcheck="false" placeholder="Pesquisar no Google ou digitar um endereço" aria-label="Pesquisar ou digitar endereço"></form>
-<div class="shortcut-grid">{{shortcutsBlock}}</div><div class="hint">Ctrl+L seleciona a barra de endereço · Ctrl+T abre uma nova guia</div></main>
+<div class="shortcut-grid">__SHORTCUTS__</div><div class="hint">Ctrl+L seleciona a barra de endereço · Ctrl+T abre uma nova guia</div></main>
 <script>
 const send=value=>{const trimmed=(value||"").trim();if(!trimmed)return;window.chrome.webview.postMessage({type:"navigate",value:trimmed})};
 document.getElementById("search-form").addEventListener("submit",e=>{e.preventDefault();send(document.getElementById("query").value)});
 document.querySelectorAll("[data-url]").forEach(button=>button.addEventListener("click",()=>send(button.dataset.url)));
 </script></body></html>
 """;
+
+        return template.Replace("__SHORTCUTS__", shortcutsBlock, StringComparison.Ordinal);
     }
 
     public static bool TryGetNavigationTarget(string json, out string value)
     {
         value = string.Empty;
+
         try
         {
             using var document = JsonDocument.Parse(json);
             var root = document.RootElement;
+
             if (root.ValueKind != JsonValueKind.Object) return false;
             if (!root.TryGetProperty("type", out var type) || type.GetString() != "navigate") return false;
             if (!root.TryGetProperty("value", out var target)) return false;
+
             value = target.GetString()?.Trim() ?? string.Empty;
             return value.Length > 0;
         }
-        catch (JsonException) { return false; }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     public static bool IsInternalSource(string? source) =>
@@ -77,7 +90,12 @@ document.querySelectorAll("[data-url]").forEach(button=>button.addEventListener(
     private static string Initial(string? title, string url)
     {
         var source = string.IsNullOrWhiteSpace(title) ? url : title.Trim();
-        foreach (var c in source) if (char.IsLetterOrDigit(c)) return c.ToString();
+
+        foreach (var character in source)
+        {
+            if (char.IsLetterOrDigit(character)) return character.ToString();
+        }
+
         return "•";
     }
 }
