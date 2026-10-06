@@ -1,4 +1,5 @@
 using CefSharp;
+using CefSharp.Web;
 using CefSharp.WinForms;
 using CefSharp.WinForms.Handler;
 using Navegador.Core;

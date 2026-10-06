@@ -2,6 +2,7 @@ using Navegador.Core;
 using Navegador.Core.Updates;
 using Navegador.Windows.Ui;
 using CefSharp;
+using CefSharp.WinForms;
 
 namespace Navegador.Windows;
 
