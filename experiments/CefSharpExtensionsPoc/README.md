@@ -26,3 +26,17 @@ O build usa CefSharp.WinForms.NETCore 152.0.100 e publica os arquivos nativos em
 ## Limite deste experimento
 
 O CI confirma que a aplicação e o pacote Windows compilam. A instalação real pela Chrome Web Store, os popups e a persistência precisam ser observados em uma sessão Windows com interface gráfica. Os resultados ainda não foram validados manualmente.
+
+
+## Registro do teste manual
+
+Preencha a tabela após executar a PoC. Até haver um resultado reproduzível, mantenha cada item como não validado.
+
+| Verificação | Resultado | Observações |
+| --- | --- | --- |
+| CWS instalou sem abrir uma janela Chromium independente | Pendente | |
+| Extensão aparece em chrome://extensions | Pendente | |
+| Popup/ação da extensão abre e responde | Pendente | |
+| Permissões foram apresentadas antes de habilitar | Pendente | |
+| Extensão persiste depois de fechar e reabrir a PoC | Pendente | |
+| ZIP e dependências cabem no formato de distribuição desejado | Pendente | |
