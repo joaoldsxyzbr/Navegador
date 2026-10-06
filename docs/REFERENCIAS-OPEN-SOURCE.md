@@ -1,11 +1,11 @@
 # Referências open source e processo de aprendizado
 
-O Rumo deve aprender com navegadores e projetos open source maduros antes de tomar decisões importantes de arquitetura, experiência, segurança e manutenção. A intenção não é copiar produtos inteiros, e sim aproveitar soluções já testadas, entender seus compromissos e adaptar apenas o que fizer sentido ao nosso escopo: Windows, C# / WinForms / .NET 10 e WebView2.
+O Rumo deve aprender com navegadores e projetos open source maduros antes de tomar decisões importantes de arquitetura, experiência, segurança e manutenção. A intenção não é copiar produtos inteiros, e sim aproveitar soluções já testadas, entender seus compromissos e adaptar apenas o que fizer sentido ao nosso escopo: Windows, C# / WinForms / .NET 10 e CefSharp/Chromium.
 
 ## Princípios
 
 1. **Começar pelo problema.** A referência é escolhida depois de definir o problema do Rumo, não o contrário.
-2. **Separar motor e produto.** Limitações do WebView2 são tratadas como restrições do motor; decisões de shell, UX e persistência continuam sob nosso controle.
+2. **Separar motor e produto.** Limitações do CefSharp/CEF são tratadas como restrições do motor; decisões de shell, UX e persistência continuam sob nosso controle.
 3. **Comparar mais de uma abordagem.** Para decisões relevantes, consultar pelo menos duas referências quando houver alternativas úteis.
 4. **Preferir fontes primárias.** Código, documentação, issues, ADRs e materiais oficiais do próprio projeto valem mais que reproduções de terceiros.
 5. **Adaptar, não clonar.** Uma solução só entra no Rumo se reduzir um problema real sem criar custo desproporcional de manutenção.
@@ -19,7 +19,7 @@ O Rumo deve aprender com navegadores e projetos open source maduros antes de tom
 | --- | --- | --- |
 | [Chromium](https://chromium.googlesource.com/chromium/src/) | abas, omnibox, perfis, permissões, downloads, DevTools, arquitetura de extensões e isolamento | referência de comportamento familiar e de padrões Chromium |
 | [Brave](https://github.com/brave/brave-browser) | como adicionar produto e recursos próprios sobre Chromium sem perder compatibilidade | shell, configurações, extensões e recursos próprios |
-| [Microsoft Edge WebView2 Samples](https://github.com/MicrosoftEdge/WebView2Samples) | APIs realmente expostas pelo WebView2, perfis, downloads, permissões, janelas e integração nativa | fonte primária para saber o que é tecnicamente possível no motor atual |
+| [CefSharp](https://github.com/cefsharp/CefSharp) | integração CEF com WinForms/.NET, handlers, ciclo de vida e configuração do Chrome Runtime | fonte primária para saber o que é tecnicamente possível no motor atual |
 | [Firefox / Gecko](https://github.com/mozilla/gecko-dev) | sessão, perfis, privacidade, multiprocessamento, recuperação e organização do chrome do navegador | alternativas de arquitetura e UX fora do ecossistema Chromium |
 | [LibreWolf](https://codeberg.org/librewolf/source) | manutenção de um downstream, defaults próprios e atualização sem reescrever o upstream | disciplina de manutenção e separação entre base e personalização |
 | [ungoogled-chromium](https://github.com/ungoogled-software/ungoogled-chromium) | séries de patches, automação e controle de divergência em relação ao upstream | aprender a reduzir custo de manutenção de alterações próprias |
@@ -34,11 +34,11 @@ A lista não é fechada. Novos projetos podem ser incluídos quando resolverem u
 Antes de uma mudança arquitetural ou funcional significativa:
 
 1. **Definir o problema no Rumo.** Exemplo: “extensões carregam, mas popups não podem ser operados”.
-2. **Inspecionar o estado atual.** Confirmar comportamento do código e, quando envolver o motor, a documentação/API atual do WebView2.
-3. **Escolher referências adequadas.** Normalmente uma referência do ecossistema Chromium/WebView2 e uma segunda abordagem independente.
+2. **Inspecionar o estado atual.** Confirmar comportamento do código e, quando envolver o motor, a documentação/API atual do CefSharp/CEF.
+3. **Escolher referências adequadas.** Normalmente uma referência do ecossistema Chromium/CefSharp e uma segunda abordagem independente.
 4. **Extrair princípios, não aparência.** Identificar fluxo, estados, limites, segurança, manutenção e comportamento de erro.
-5. **Comparar com nossas restrições.** Windows, WebView2, modo portátil, tamanho do projeto, acessibilidade e custo de atualização.
-6. **Escolher a menor solução suficiente.** Evitar criar infraestrutura que o WebView2 ou o Windows já fornecem.
+5. **Comparar com nossas restrições.** Windows, CefSharp, modo portátil, tamanho dos artefatos, acessibilidade e custo de atualização.
+6. **Escolher a menor solução suficiente.** Evitar criar infraestrutura que o Chromium ou o Windows já fornecem.
 7. **Implementar e validar.** Testes automatizados quando aplicáveis e validação visual/funcional real no Windows para mudanças de UI.
 8. **Atualizar a documentação.** Registrar a decisão em Arquitetura, Requisitos, Plano ou neste documento quando ela for durável.
 
@@ -46,7 +46,7 @@ Antes de uma mudança arquitetural ou funcional significativa:
 
 - Qual problema real do Rumo isso resolve?
 - O comportamento pertence ao motor ou ao nosso shell?
-- O WebView2 permite implementar isso de forma suportada?
+- O CefSharp/CEF permite implementar isso de forma suportada?
 - Como Chrome/Brave resolvem e como Firefox ou outro projeto resolve?
 - Qual é o custo de manter a solução nas próximas versões?
 - O modo portátil continua correto?
@@ -59,9 +59,9 @@ Antes de uma mudança arquitetural ou funcional significativa:
 
 ### Extensões
 
-**Referências:** Chromium, Brave, Edge/WebView2 e ungoogled-chromium.
+**Referências:** Chromium, Brave, CefSharp e ungoogled-chromium.
 
-Investigar separadamente instalação, descoberta, ativação/desativação, permissões, toolbar, popups e atualização. Não prometer compatibilidade com Chrome Web Store ou APIs que o WebView2 não exponha.
+Investigar separadamente instalação, descoberta, ativação/desativação, permissões, toolbar, popups e atualização. O Chrome Runtime dá acesso ao sistema de extensões Chromium, mas cada fluxo e extensão precisa ser testado; não assumir compatibilidade universal com a Chrome Web Store.
 
 ### Configurações
 
@@ -92,9 +92,9 @@ Separar permissões do site, dados persistentes, janela privada e limpeza de dad
 - Marca, ícones, textos ou identidade visual de outros navegadores.
 - Código incompatível com a licença do Rumo ou cuja origem não esteja clara.
 - Funcionalidades só porque são populares.
-- Workarounds frágeis para fingir suporte que o WebView2 não oferece.
+- Workarounds frágeis para fingir suporte que o CefSharp/CEF não oferece.
 - Complexidade de um navegador completo quando uma solução menor atende ao nosso produto.
-- Um motor próprio. O Rumo continua usando WebView2 enquanto essa decisão for adequada.
+- Um motor próprio. O Rumo usa o Chromium pré-compilado distribuído pelo CefSharp enquanto essa decisão for adequada.
 
 ## Modelo curto para registrar uma decisão
 
@@ -111,7 +111,7 @@ Projetos/documentação relevantes.
 Princípios úteis e diferenças entre as abordagens.
 
 **Restrições do Rumo:**  
-WebView2, Windows, portabilidade, segurança, manutenção etc.
+CefSharp, Windows, portabilidade, segurança, manutenção etc.
 
 **Decisão:**  
 Solução escolhida e por quê.

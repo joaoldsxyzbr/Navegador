@@ -1,6 +1,7 @@
 using Navegador.Core;
 using Navegador.Core.Updates;
 using Navegador.Windows.Ui;
+using CefSharp;
 
 namespace Navegador.Windows;
 
@@ -32,6 +33,42 @@ internal static class Program
 
         AppPaths.EnsureDataDirectory();
         UpdateService.CleanupOldUpdateCache();
+
+        try
+        {
+            // Chrome Runtime é necessário para as páginas internas de extensões do Chromium.
+            CefSharpSettings.RuntimeStyle = CefRuntimeStyle.Chrome;
+            CefSharpSettings.ShutdownOnExit = true;
+
+            var settings = new CefSettings
+            {
+                RootCachePath = AppPaths.ChromiumRootDirectory,
+                CachePath = AppPaths.ChromiumProfileDirectory
+            };
+
+            // Permite usar o modo de desenvolvedor da página chrome://extensions.
+            settings.CefCommandLineArgs.Add("enable-unsafe-extension-debugging", "1");
+
+            Directory.CreateDirectory(settings.CachePath);
+            if (!Cef.Initialize(settings))
+            {
+                MessageBox.Show(
+                    "O Rumo não conseguiu iniciar o Chromium. Verifique se todos os arquivos do pacote estão na mesma pasta e tente novamente.",
+                    Branding.Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                return;
+            }
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                "O Rumo não conseguiu iniciar o Chromium. Verifique se todos os arquivos do pacote estão na mesma pasta.\n\n" + exception.Message,
+                Branding.Name,
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
 
         Application.Run(new BrowserForm());
     }

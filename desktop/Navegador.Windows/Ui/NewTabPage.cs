@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text;
-using System.Text.Json;
 using Navegador.Core.Models;
 
 namespace Navegador.Windows.Ui;
@@ -18,10 +17,10 @@ internal static class NewTabPage
             var initial = WebUtility.HtmlEncode(Initial(favorite.Title, favorite.Url));
 
             shortcuts.Append(
-                "<button class=\"shortcut\" type=\"button\" data-url=\"" + url + "\" title=\"" + title + "\">" +
+                "<a class=\"shortcut\" href=\"" + url + "\" title=\"" + title + "\">" +
                 "<span class=\"shortcut-icon\">" + initial + "</span>" +
                 "<span class=\"shortcut-title\">" + title + "</span>" +
-                "</button>");
+                "</a>");
         }
 
         var shortcutsBlock = shortcuts.Length == 0
@@ -47,19 +46,15 @@ main{width:min(760px,calc(100% - 48px));margin:0 auto;padding-top:clamp(92px,17v
 .search:hover{background:var(--hover)}.search:focus-within{border-color:var(--accent);box-shadow:0 1px 8px rgba(0,0,0,.3)}
 .search-icon{width:18px;height:18px;border:2px solid var(--muted);border-radius:50%;position:relative;flex:0 0 auto}.search-icon:after{content:"";position:absolute;width:7px;height:2px;background:var(--muted);right:-5px;bottom:-2px;transform:rotate(45deg);border-radius:2px}
 input{width:100%;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:16px}input::placeholder{color:var(--muted)}
-.shortcut-grid{margin:34px auto 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:560px}.shortcut{min-width:0;height:94px;border:0;border-radius:14px;background:transparent;color:var(--text);cursor:pointer;padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}
+.shortcut-grid{margin:34px auto 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:560px}.shortcut{min-width:0;height:94px;border:0;border-radius:14px;background:transparent;color:var(--text);cursor:pointer;padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-decoration:none}
 .shortcut:hover,.shortcut:focus-visible{background:rgba(255,255,255,.07);outline:none}.shortcut-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:var(--surface);color:var(--accent);font-weight:600;font-size:15px;text-transform:uppercase}.shortcut-title{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.empty{grid-column:1/-1;color:var(--muted);font-size:13px;padding:18px}.hint{margin-top:24px;color:var(--muted);font-size:12px}.privacy-note{margin:18px auto 0;color:var(--muted);font-size:13px}
 @media(max-width:560px){.shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body><main><div class="brand"><span class="mark" aria-hidden="true">__BRAND_MARK__</span><span>__BRAND_NAME__</span></div>
-<form class="search" id="search-form" autocomplete="off"><span class="search-icon" aria-hidden="true"></span><input id="query" autofocus spellcheck="false" placeholder="Pesquisar no Google ou digitar um endereço" aria-label="Pesquisar ou digitar endereço"></form>
+<form class="search" action="https://www.google.com/search" method="get" autocomplete="off"><span class="search-icon" aria-hidden="true"></span><input name="q" autofocus spellcheck="false" placeholder="Pesquisar no Google" aria-label="Pesquisar no Google"></form>
 <div class="shortcut-grid">__SHORTCUTS__</div>__PRIVATE_NOTICE__<div class="hint">Ctrl+L seleciona a barra de endereço · Ctrl+T abre uma nova guia</div></main>
-<script>
-const send=value=>{const trimmed=(value||"").trim();if(!trimmed)return;window.chrome.webview.postMessage({type:"navigate",value:trimmed})};
-document.getElementById("search-form").addEventListener("submit",e=>{e.preventDefault();send(document.getElementById("query").value)});
-document.querySelectorAll("[data-url]").forEach(button=>button.addEventListener("click",()=>send(button.dataset.url)));
-</script></body></html>
+</body></html>
 """;
 
         return template
@@ -69,30 +64,8 @@ document.querySelectorAll("[data-url]").forEach(button=>button.addEventListener(
             .Replace("__BRAND_NAME__", Branding.Name, StringComparison.Ordinal);
     }
 
-    public static bool TryGetNavigationTarget(string json, out string value)
-    {
-        value = string.Empty;
-
-        try
-        {
-            using var document = JsonDocument.Parse(json);
-            var root = document.RootElement;
-
-            if (root.ValueKind != JsonValueKind.Object) return false;
-            if (!root.TryGetProperty("type", out var type) || type.GetString() != "navigate") return false;
-            if (!root.TryGetProperty("value", out var target)) return false;
-
-            value = target.GetString()?.Trim() ?? string.Empty;
-            return value.Length > 0;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
-
     public static bool IsInternalSource(string? source) =>
-        string.Equals(source, "about:blank", StringComparison.OrdinalIgnoreCase);
+        source?.StartsWith("data:text/html", StringComparison.OrdinalIgnoreCase) == true;
 
     private static string Initial(string? title, string url)
     {

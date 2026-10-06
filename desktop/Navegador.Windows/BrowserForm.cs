@@ -1,6 +1,5 @@
-using System.Diagnostics;
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.WinForms;
+using CefSharp;
+using CefSharp.WinForms;
 using Navegador.Core;
 using Navegador.Core.Models;
 using Navegador.Core.Storage;
@@ -20,6 +19,7 @@ internal sealed partial class BrowserForm : Form
     private static readonly Color HoverColor = Theme.Hover;
     private static readonly Color PressColor = Theme.Press;
     private static readonly Color TextColor = Theme.Text;
+    private static readonly HttpClient FaviconClient = new() { Timeout = TimeSpan.FromSeconds(4) };
 
     private readonly FlowLayoutPanel _tabStrip = new()
     {
@@ -95,6 +95,7 @@ internal sealed partial class BrowserForm : Form
     private readonly SettingsStore _settings;
     private readonly DownloadManager _downloads;
     private readonly DownloadsBar _downloadsBar;
+    private readonly IRequestContext? _requestContext;
 
     private readonly IconButton _newTabButton;
     private readonly IconButton _backButton;
@@ -114,7 +115,6 @@ internal sealed partial class BrowserForm : Form
     private Point _dragStartPoint;
     private DateTimeOffset? _historyClearedAt;
 
-    private static Task<CoreWebView2Environment>? _environmentTask;
     private BrowserTab? _activeTab;
     private bool _closingForGood;
 
@@ -124,7 +124,13 @@ internal sealed partial class BrowserForm : Form
         _settings = SettingsStore.Load();
         _favorites = FavoritesStore.Load();
         _history = HistoryStore.Load();
-        _downloads = new DownloadManager(_settings);
+        _requestContext = _isPrivate
+            ? new RequestContext(new RequestContextSettings
+            {
+                CachePath = string.Empty
+            })
+            : null;
+        _downloads = new DownloadManager(_settings, this);
         _downloadsBar = new DownloadsBar(_downloads);
 
         Text = _isPrivate ? $"Navegação privada — {AppName}" : AppName;
@@ -360,5 +366,5 @@ internal sealed partial class BrowserForm : Form
 
     private BrowserTab? ActiveTab => _activeTab;
 
-    private CoreWebView2? ActiveCore => _activeTab?.View.CoreWebView2;
+    private ChromiumWebBrowser? ActiveCore => _activeTab?.View;
 }

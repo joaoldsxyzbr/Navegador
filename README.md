@@ -1,6 +1,6 @@
 # Rumo
 
-O Rumo é um navegador para Windows, com a organização familiar do Chrome e motor WebView2 (Chromium/Edge).
+O Rumo é um navegador para Windows feito em C# / WinForms, com Chromium incorporado por meio do CefSharp.
 
 <img src="assets/rumo-mark.svg" width="112" alt="Logo Rumo — uma bússola azul e ciano">
 
@@ -13,7 +13,7 @@ Cada release oferece duas opções: instalador por usuário e ZIP portátil.
 - **Instalador**: execute o arquivo `Rumo-v…-setup.exe` e siga as etapas. Ele cria atalhos no menu Iniciar e, se você escolher, na área de trabalho. Não exige elevação de administrador.
 - **Portátil**: baixe o ZIP, extraia a pasta inteira e abra `Navegador.exe`.
 
-Os dois pacotes são single-file e self-contained; o .NET 10 não precisa ser instalado separadamente. O Microsoft Edge WebView2 Runtime é necessário para renderizar páginas. Se ele faltar, o Rumo oferece abrir a página oficial para instalação.
+Os pacotes são self-contained: não exigem instalação separada do .NET nem do Microsoft Edge WebView2 Runtime. O ZIP contém o executável e os arquivos do Chromium; extraia a pasta inteira e mantenha esses arquivos juntos.
 
 ## Onde ficam os dados
 
@@ -21,17 +21,17 @@ O Rumo tenta manter tudo em `Data\` ao lado do executável, para continuar port�
 
 | Arquivo | Conteúdo |
 | --- | --- |
-| `Data\WebView2\` | perfil do motor (cookies, cache, extensões) |
+| `Data\Chromium\Profile\` | perfil do motor (cookies, cache e extensões) |
 | `Data\session.json` | abas abertas quando o navegador foi fechado |
 | `Data\favorites.json` | favoritos |
 | `Data\history.json` | histórico de navegação |
 | `Data\settings.json` | preferências |
 
-No ZIP portátil, os dados ficam junto do executável em `Data\`. No instalador por usuário, ficam em `%LOCALAPPDATA%\Navegador`, fora da pasta instalada. Se não puder gravar na pasta portátil, o Rumo usa o mesmo perfil local. A tela **Configurações** mostra qual modo está em uso, e o perfil do WebView2 acompanha essa escolha. Desinstalar o aplicativo preserva os dados do usuário.
+No ZIP portátil, os dados ficam junto do executável em `Data\`. No instalador por usuário, ficam em `%LOCALAPPDATA%\Navegador`, fora da pasta instalada. Se não puder gravar na pasta portátil, o Rumo usa o mesmo perfil local. A tela **Configurações** mostra qual modo está em uso. O perfil antigo `Data\WebView2` não é convertido automaticamente; ele permanece no disco sem ser alterado. Desinstalar o aplicativo preserva os dados do usuário.
 
 ## Direção
 
-Começamos pelo PC. O app Windows usa C# e WinForms para a interface e WebView2 para carregar sites. O motor é fornecido pelo Microsoft Edge WebView2 Runtime; não compilamos Chromium nem Firefox.
+O app Windows usa C# e WinForms para a interface e CefSharp para incorporar uma versão pré-compilada do Chromium. O projeto não compila o Chromium no CI.
 
 O visual mantém a organização familiar do Chrome: faixa de abas, barra de endereço, controles, menus e acesso a extensões. A marca do produto é Rumo; o repositório e o executável continuam com o nome técnico Navegador nesta versão.
 
@@ -47,7 +47,7 @@ Decisões relevantes de arquitetura, UX, segurança e manutenção seguem um pro
 - voltar, avançar, recarregar e parar;
 - barra de endereço com busca (endereço sem esquema vira `https://`, texto livre vira busca);
 - tema escuro e shell próprio, com barra de título desenhada pelo app;
-- perfil persistente em `Data\WebView2`;
+- perfil persistente em `Data\Chromium\Profile`;
 - **sessão**: as abas voltam na próxima abertura (desligável em Configurações);
 - **favoritos**: estrela na barra, barra de favoritos e uma janela para renomear e remover;
 - **histórico**: registro das visitas, com busca, remoção e limpeza total;
@@ -55,14 +55,14 @@ Decisões relevantes de arquitetura, UX, segurança e manutenção seguem um pro
 - **downloads**: pasta de destino configurável, faixa de downloads na parte de baixo e janela com abrir, abrir pasta e cancelar;
 - **configurações**: sessão, pasta de downloads, pergunta de destino e página inicial;
 - instância única, para duas cópias não escreverem a mesma sessão;
-- extensões Chromium locais descompactadas, com lista, ativação, desativação e remoção;
+- gerenciador interno de extensões Chromium em `chrome://extensions`, com modo de desenvolvedor disponível para extensões descompactadas;
 - atualização integrada por **botão visível na barra superior** e pelo menu, com consulta ao GitHub Releases, validação SHA-256, **rollback** automático e reinício;
 - nova guia própria, limpa e escura, com pesquisa central e atalhos dos favoritos;
 - `Ctrl+Shift+T` para reabrir a última guia fechada.
 
 ## Limites conhecidos
 
-- **Extensões**: o WebView2 não oferece a Chrome Web Store nem a janela de popup do ícone na barra. Extensões que dependem de popup (gerenciadores de senha, bloqueadores com painel) carregam, mas não podem ser operadas pela interface. A tela de extensões diz isso ao usuário.
+- **Extensões**: o Rumo abre o gerenciador interno do Chromium e preserva janelas de popup de extensão. Compatibilidade e instalação pela Chrome Web Store dependem das APIs e políticas de cada extensão e ainda precisam de validação prática nesta distribuição.
 - **Abas**: ainda não há grupos de abas; reabrir aba fechada funciona com `Ctrl+Shift+T`.
 - **Instalador**: a instalação é por usuário e não tem assinatura de código nesta release.
 - **Sincronização** entre máquinas não existe.
@@ -72,9 +72,7 @@ Decisões relevantes de arquitetura, UX, segurança e manutenção seguem um pro
 
 - Windows 10/11 x64;
 - .NET 10 SDK;
-- Microsoft Edge WebView2 Runtime.
-
-O WebView2 Runtime costuma estar disponível no Windows 11 e em instalações atualizadas do Windows 10. Se estiver faltando, o Rumo mostra uma opção para abrir a página oficial de instalação.
+- Nenhum runtime de navegador separado: o Chromium é distribuído junto com o app.
 
 ## Estrutura do repositório
 
@@ -82,7 +80,7 @@ O WebView2 Runtime costuma estar disponível no Windows 11 e em instalações at
 desktop/
   Navegador.Core/     lógica pura: sessão, favoritos, histórico, configurações,
                       resolução de endereço e o protocolo do atualizador
-  Navegador.Windows/  app WinForms + WebView2 (depende do Core)
+  Navegador.Windows/  app WinForms + CefSharp/Chromium (depende do Core)
   Navegador.Tests/    testes do Core, sem dependências externas
 docs/                 arquitetura, requisitos e plano
 scripts/release.ps1   publica uma versão
@@ -127,6 +125,7 @@ Como alternativa operacional pelo próprio GitHub, uma branch `release/vX.Y.Z` a
 - [Requisitos](docs/REQUISITOS.md)
 - [Plano](docs/PLANO.md)
 - [Referências open source](docs/REFERENCIAS-OPEN-SOURCE.md)
+- [Avisos de terceiros](THIRD-PARTY-NOTICES.md)
 
 ## Histórico
 
@@ -136,3 +135,4 @@ Como alternativa operacional pelo próprio GitHub, uma branch `release/vX.Y.Z` a
 - `v0.3.0`: primeira revisão visual grande do shell, com barra de título própria, abas e omnibox inspiradas no Chrome.
 - `v0.4.0`: atualização integrada de um clique usando GitHub Releases.
 - `v0.5.0`: marca Rumo, correção da maximização, modo InPrivate, limpeza de dados, favicons e controles de abas, sugestões na omnibox, tela cheia e instalador opcional; inclui também o Core separado, sessão, favoritos, histórico, downloads, nova guia e atualização integrada.
+- `v0.6.0`: motor CefSharp/Chromium distribuído com o app, perfil independente, suporte à página interna de extensões e pacotes ZIP/instalador com os arquivos nativos do Chromium.

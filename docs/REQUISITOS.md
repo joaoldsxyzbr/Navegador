@@ -3,7 +3,7 @@
 ## Windows
 
 - C# / WinForms / .NET 10.
-- WebView2, sem compilar Chromium/Firefox.
+- CefSharp com Chromium pré-compilado incluído nos pacotes; não compilar Chromium/Firefox no CI.
 - Visual próximo do Chrome, mantendo identidade Rumo.
 - Logo de bússola azul/ciano na nova guia e no ícone do executável.
 - Tema escuro.
@@ -36,7 +36,7 @@
 
 - Versão em um único lugar: VERSION.
 - Release apenas por tag vX.Y.Z compatível.
-- Pacote x64 single-file com Navegador.exe na raiz.
+- Pacote x64 self-contained com Navegador.exe e os arquivos nativos do CefSharp/Chromium na raiz da pasta publicada.
 
 ## Ainda fora
 

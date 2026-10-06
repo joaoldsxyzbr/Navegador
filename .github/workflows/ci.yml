@@ -1,4 +1,4 @@
-name: WebView2 Windows CI
+name: CefSharp Windows CI
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
   test:
     name: Testar lógica do Core
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -42,7 +42,7 @@ jobs:
   build:
     name: Compilar app Windows
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -58,6 +58,15 @@ jobs:
 
       - name: Publicar app para validar os pacotes
         run: dotnet publish desktop/Navegador.Windows/Navegador.Windows.csproj --configuration Release --runtime win-x64 --no-restore --output publish/Navegador
+
+      - name: Conferir os arquivos obrigatórios do Chromium
+        shell: pwsh
+        run: |
+          $required = @("Navegador.exe", "CefSharp.BrowserSubprocess.exe", "libcef.dll", "icudtl.dat", "resources.pak")
+          foreach ($file in $required) {
+            $path = Join-Path "publish/Navegador" $file
+            if (-not (Test-Path $path)) { throw "Arquivo obrigatório do CefSharp/Chromium ausente: $path" }
+          }
 
       - name: Compilar instalador opcional
         shell: pwsh

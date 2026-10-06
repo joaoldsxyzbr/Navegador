@@ -12,14 +12,14 @@
     <RootNamespace>Navegador.Windows</RootNamespace>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- CefSharp/CEF precisa distribuir DLLs, subprocesso, locales e recursos ao lado do executável. -->
+    <PublishSingleFile>false</PublishSingleFile>
     <PublishTrimmed>false</PublishTrimmed>
     <!-- A versão vem do arquivo VERSION, via Directory.Build.props. -->
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <PackageReference Include="CefSharp.WinForms.NETCore" Version="152.0.100" />
   </ItemGroup>
 
   <ItemGroup>

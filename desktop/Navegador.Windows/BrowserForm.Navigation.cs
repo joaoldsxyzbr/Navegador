@@ -1,4 +1,4 @@
-using Microsoft.Web.WebView2.Core;
+using CefSharp;
 using Navegador.Core;
 using Navegador.Core.Models;
 using Navegador.Core.Storage;
@@ -15,78 +15,40 @@ internal sealed partial class BrowserForm
 
     private void AttachBrowserEvents(BrowserTab tab)
     {
-        var core = tab.View.CoreWebView2!;
-
-        core.NavigationStarting += (_, eventArgs) =>
+        tab.View.AddressChanged += (_, eventArgs) => PostToUi(() =>
         {
+            if (!IsAlive(tab)) return;
             tab.LastNavigationStartedAt = DateTimeOffset.UtcNow;
-            if (tab.IsInternalNewTab && !NewTabPage.IsInternalSource(eventArgs.Uri)) tab.IsInternalNewTab = false;
+            tab.IsInternalNewTab = NewTabPage.IsInternalSource(eventArgs.Address);
             SetTabFavicon(tab, null);
-            if (tab == _activeTab) _address.Text = tab.IsInternalNewTab ? string.Empty : eventArgs.Uri;
+            UpdateTabTitle(tab);
+            if (tab == _activeTab) _address.Text = tab.IsInternalNewTab ? string.Empty : eventArgs.Address;
             UpdateNavigationButtons(tab);
-        };
+        });
 
-        core.SourceChanged += (_, _) =>
+        tab.View.TitleChanged += (_, eventArgs) => PostToUi(() =>
         {
-            if (tab == _activeTab) _address.Text = tab.IsInternalNewTab ? string.Empty : core.Source;
-        };
-
-        core.FaviconChanged += async (_, _) => await UpdateTabFaviconAsync(tab);
-
-        core.DocumentTitleChanged += (_, _) =>
-        {
+            if (!IsAlive(tab)) return;
+            tab.Title = eventArgs.Title;
             UpdateTabTitle(tab);
             UpdateHistoryTitle(tab);
-        };
+        });
 
-        core.NavigationCompleted += (_, _) =>
+        tab.View.LoadingStateChanged += (_, eventArgs) => PostToUi(() =>
         {
+            if (!IsAlive(tab)) return;
             UpdateTabTitle(tab);
             UpdateNavigationButtons(tab);
+            if (eventArgs.IsLoading) return;
+
             RecordVisit(tab);
 
             if (tab == _activeTab)
             {
-                _address.Text = tab.IsInternalNewTab ? string.Empty : core.Source;
+                _address.Text = tab.IsInternalNewTab ? string.Empty : tab.View.Address ?? string.Empty;
                 RefreshBookmarkButton();
             }
-        };
-
-        core.WebMessageReceived += (_, eventArgs) =>
-        {
-            if (!tab.IsInternalNewTab) return;
-            if (!NewTabPage.TryGetNavigationTarget(eventArgs.WebMessageAsJson, out var input)) return;
-            var target = AddressResolver.Resolve(input);
-            if (string.IsNullOrWhiteSpace(target)) return;
-            tab.IsInternalNewTab = false;
-            core.Navigate(target);
-        };
-
-        core.NewWindowRequested += (_, eventArgs) =>
-        {
-            // Janelas de popup viram guias novas, como no Chrome.
-            eventArgs.Handled = true;
-            _ = AddTabAsync(eventArgs.Uri);
-        };
-
-        core.DownloadStarting += (_, eventArgs) =>
-        {
-            _downloads.Begin(eventArgs);
-            _downloadsBar.Reveal();
-        };
-
-        core.ProcessFailed += (_, eventArgs) =>
-        {
-            if (eventArgs.ProcessFailedKind == CoreWebView2ProcessFailedKind.BrowserProcessExited)
-            {
-                MessageBox.Show(
-                    this,
-                    "O processo que renderiza as páginas foi encerrado. Recarregue a guia para continuar.",
-                    AppName,
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-            }
-        };
+        });
     }
 
     private void NavigateAddress()
@@ -107,7 +69,7 @@ internal sealed partial class BrowserForm
         if (input.Length == 0 || ActiveCore is not { } core) return;
 
         if (!string.Equals(_address.Text, input, StringComparison.Ordinal)) _address.Text = input;
-        core.Navigate(AddressResolver.Resolve(input));
+        core.Load(AddressResolver.Resolve(input));
     }
 
     private void NavigateSelectedSuggestion()
@@ -176,25 +138,25 @@ internal sealed partial class BrowserForm
 
     private void NavigateBack()
     {
-        if (ActiveCore?.CanGoBack == true) ActiveCore.GoBack();
+        if (ActiveCore is { CanGoBack: true } core) core.GetBrowser().GoBack();
     }
 
     private void NavigateForward()
     {
-        if (ActiveCore?.CanGoForward == true) ActiveCore.GoForward();
+        if (ActiveCore is { CanGoForward: true } core) core.GetBrowser().GoForward();
     }
 
     private void ReloadActiveTab()
     {
-        if (ActiveCore is { } core) core.Reload();
+        if (ActiveCore is { IsBrowserInitialized: true } core) core.GetBrowser().Reload();
     }
 
     private void StopOrReload()
     {
-        if (ActiveCore is not { } core) return;
+        if (ActiveCore is not { IsBrowserInitialized: true } core) return;
 
-        core.Stop();
-        core.Reload();
+        core.GetBrowser().StopLoad();
+        core.GetBrowser().Reload();
     }
 
     /// <summary>Registra a visita no histórico e mantém o arquivo atualizado.</summary>
@@ -203,12 +165,11 @@ internal sealed partial class BrowserForm
         if (_isPrivate || !IsAlive(tab)) return;
         if (_historyClearedAt is { } clearedAt && tab.LastNavigationStartedAt <= clearedAt) return;
 
-        var core = tab.View.CoreWebView2;
-        var url = core?.Source;
+        var url = tab.View.Address;
 
         if (!AddressResolver.IsPersistable(url)) return;
 
-        var title = core?.DocumentTitle;
+        var title = tab.Title;
         _history.Record(url!, title);
 
         if (++_visitsSinceHistoryFlush < HistoryFlushEvery) return;
@@ -220,9 +181,8 @@ internal sealed partial class BrowserForm
     private void UpdateHistoryTitle(BrowserTab tab)
     {
         if (_isPrivate || !IsAlive(tab)) return;
-        var core = tab.View.CoreWebView2;
-        var url = core?.Source;
-        var title = core?.DocumentTitle;
+        var url = tab.View.Address;
+        var title = tab.Title;
         if (!AddressResolver.IsPersistable(url) || string.IsNullOrWhiteSpace(title)) return;
         _history.UpdateTitle(url!, title);
     }
@@ -230,7 +190,7 @@ internal sealed partial class BrowserForm
     private void ToggleFavoriteForActiveTab()
     {
         if (_isPrivate) return;
-        var url = ActiveCore?.Source;
+        var url = ActiveCore?.Address;
         if (!AddressResolver.IsPersistable(url))
         {
             MessageBox.Show(this, "Abra uma página para adicionar aos favoritos.", "Favoritos",
@@ -238,7 +198,7 @@ internal sealed partial class BrowserForm
             return;
         }
 
-        var title = ActiveCore?.DocumentTitle;
+        var title = _activeTab?.Title;
         var added = _favorites.Add(url!, title);
 
         RefreshBookmarkButton();
@@ -249,7 +209,7 @@ internal sealed partial class BrowserForm
 
     private void RefreshBookmarkButton()
     {
-        var url = ActiveCore?.Source;
+        var url = ActiveCore?.Address;
         var saved = _favorites.Contains(url);
 
         _bookmarkButton.Icon = saved ? BrowserIcon.StarFilled : BrowserIcon.Star;
@@ -304,7 +264,7 @@ internal sealed partial class BrowserForm
     {
         if (ActiveCore is { } core)
         {
-            core.Navigate(url);
+            core.Load(url);
             return;
         }
 
@@ -316,28 +276,16 @@ internal sealed partial class BrowserForm
     /// <summary>Endereço e título da aba ativa, para os favoritos.</summary>
     private (string Url, string Title)? CurrentPage()
     {
-        var core = ActiveCore;
-        if (core?.Source is not { } url || !AddressResolver.IsPersistable(url)) return null;
+        var tab = _activeTab;
+        var url = tab?.View.Address;
+        if (string.IsNullOrWhiteSpace(url) || !AddressResolver.IsPersistable(url)) return null;
 
-        return (url, core.DocumentTitle ?? url);
+        return (url, tab?.Title ?? url);
     }
 
     private void OpenExtensions()
     {
-        var profile = ActiveCore?.Profile;
-        if (profile is null)
-        {
-            MessageBox.Show(
-                this,
-                "Aguarde a guia terminar de iniciar para gerenciar extensões.",
-                "Extensões",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            return;
-        }
-
-        using var dialog = new ExtensionsForm(profile);
-        dialog.ShowDialog(this);
+        OpenUrlInNewTab("chrome://extensions/");
     }
 
     private void ShowFavorites()
@@ -378,11 +326,10 @@ internal sealed partial class BrowserForm
         MessageBox.Show(
             this,
             $"{AppName} {Navegador.Core.Updates.CurrentVersion.Display}\n\n" +
-            $"Motor: Microsoft Edge WebView2\n" +
+            $"Motor: Chromium {Cef.ChromiumVersion} (CefSharp {typeof(Cef).Assembly.GetName().Version})\n" +
             $"Dados: {AppPaths.DataDirectory}\n" +
             $"Modo: {(AppPaths.IsPortable ? "portátil" : "perfil do usuário")}\n\n" +
-            "Extensões são carregadas de pastas locais descompactadas; a Chrome Web Store\n" +
-            "e as janelas de popup das extensões ainda não são suportadas.",
+            "A página de extensões abre o gerenciador Chromium integrado. A compatibilidade de cada extensão depende das APIs que ela utiliza.",
             $"Sobre o {AppName}",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);

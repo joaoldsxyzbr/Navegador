@@ -2,6 +2,7 @@ using Navegador.Core;
 using Navegador.Core.Storage;
 using Navegador.Core.Updates;
 using Navegador.Windows.Ui;
+using CefSharp;
 
 namespace Navegador.Windows;
 
@@ -82,7 +83,7 @@ internal sealed class SettingsForm : Form
                 $"{Branding.Name} {CurrentVersion.Display}\n" +
                 $"Dados: {AppPaths.DataDirectory}\n" +
                 $"Modo: {(AppPaths.IsPortable ? "portátil (ao lado do executável)" : "perfil do usuário")}\n" +
-                $"WebView2: {WebViewVersion()}"
+                $"Chromium: {Cef.ChromiumVersion}"
         };
 
         layout.Controls.Add(info, 0, layout.RowCount);
@@ -193,17 +194,4 @@ internal sealed class SettingsForm : Form
         if (picker.ShowDialog(this) == DialogResult.OK) _downloadFolder.Text = picker.SelectedPath;
     }
 
-    private static string WebViewVersion()
-    {
-        try
-        {
-            return string.IsNullOrEmpty(Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString())
-                ? "não instalado"
-                : Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString();
-        }
-        catch (Exception exception) when (exception is Microsoft.Web.WebView2.Core.WebView2RuntimeNotFoundException or InvalidOperationException)
-        {
-            return "não instalado";
-        }
-    }
 }

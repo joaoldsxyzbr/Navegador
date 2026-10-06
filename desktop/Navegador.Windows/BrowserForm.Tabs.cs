@@ -1,6 +1,6 @@
-using System.Diagnostics;
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.WinForms;
+using CefSharp;
+using CefSharp.WinForms;
+using CefSharp.WinForms.Handler;
 using Navegador.Core;
 using Navegador.Core.Models;
 using Navegador.Core.Storage;
@@ -43,16 +43,40 @@ internal sealed partial class BrowserForm
         RefreshFavoritesBar();
     }
 
-    private async Task<BrowserTab?> AddTabAsync(string? initialAddress = null, bool activate = true, bool pinned = false)
+    private Task<BrowserTab?> AddTabAsync(string? initialAddress = null, bool activate = true, bool pinned = false)
     {
-        var view = new WebView2
-        {
-            Dock = DockStyle.Fill,
-            DefaultBackgroundColor = Theme.PageBackground,
-            Visible = false
-        };
+        var isNewTab = string.IsNullOrWhiteSpace(initialAddress);
+        var target = isNewTab
+            ? null
+            : AddressResolver.IsPersistable(initialAddress) ? initialAddress! : AddressResolver.Resolve(initialAddress!);
+        var view = isNewTab || string.IsNullOrWhiteSpace(target)
+            ? new ChromiumWebBrowser(new HtmlString(NewTabPage.Build(_favorites.Items, _isPrivate)), _requestContext)
+            : new ChromiumWebBrowser(target, _requestContext);
+        view.Dock = DockStyle.Fill;
+        view.Visible = false;
 
-        var tab = new BrowserTab(view, pinned);
+        var tab = new BrowserTab(view, pinned) { IsInternalNewTab = isNewTab || string.IsNullOrWhiteSpace(target) };
+        view.DownloadHandler = _downloads.Handler;
+        view.DisplayHandler = new BrowserFaviconHandler(urls =>
+        {
+            var faviconUrl = urls.FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(faviconUrl))
+            {
+                PostToUi(() => SetTabFavicon(tab, null));
+                return;
+            }
+
+            _ = UpdateTabFaviconAsync(tab, faviconUrl);
+        });
+        view.LifeSpanHandler = new LifeSpanHandler().OnBeforePopupCreated(
+            (_, _, _, targetUrl, _, _, _, _) =>
+            {
+                if (targetUrl?.StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase) == true)
+                    return PopupCreation.Continue;
+
+                if (!string.IsNullOrWhiteSpace(targetUrl)) PostToUi(() => OpenUrlInNewTab(targetUrl));
+                return PopupCreation.Cancel;
+            });
         _toolTip.SetToolTip(tab.CloseButton, "Fechar guia");
         tab.SelectButton.Click += (_, _) => ActivateTab(tab);
         tab.CloseButton.Click += (_, _) => CloseTab(tab);
@@ -67,91 +91,29 @@ internal sealed partial class BrowserForm
 
         if (activate) ActivateTab(tab);
 
-        try
-        {
-            var environment = await GetEnvironmentAsync();
-
-            // A aba pode ter sido fechada enquanto o WebView2 inicializava.
-            if (tab.View.IsDisposed || !_tabs.Contains(tab)) return null;
-
-            var controllerOptions = _isPrivate ? environment.CreateCoreWebView2ControllerOptions() : null;
-            if (controllerOptions is not null) controllerOptions.IsInPrivateModeEnabled = true;
-            await view.EnsureCoreWebView2Async(environment, controllerOptions);
-
-            if (tab.View.IsDisposed || !_tabs.Contains(tab)) return null;
-
-            AttachBrowserEvents(tab);
-
-            if (string.IsNullOrWhiteSpace(initialAddress))
-            {
-                ShowNewTabPage(tab);
-            }
-            else
-            {
-                var target = AddressResolver.IsPersistable(initialAddress) ? initialAddress! : AddressResolver.Resolve(initialAddress);
-                if (string.IsNullOrWhiteSpace(target)) ShowNewTabPage(tab);
-                else view.CoreWebView2!.Navigate(target);
-            }
-
-            return tab;
-        }
-        catch (Exception exception)
-        {
-            if (tab.View.IsDisposed || !_tabs.Contains(tab)) return null;
-
-            if (exception is WebView2RuntimeNotFoundException)
-            {
-                var install = MessageBox.Show(
-                    this,
-                    "O Rumo precisa do Microsoft Edge WebView2 Runtime para abrir páginas.\n\n" +
-                    "Quer abrir a página oficial para baixar e instalar o Runtime? Depois, feche e abra o Rumo novamente.",
-                    AppName,
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Warning);
-
-                if (install == DialogResult.Yes)
-                {
-                    Process.Start(new ProcessStartInfo("https://developer.microsoft.com/microsoft-edge/webview2/")
-                    {
-                        UseShellExecute = true
-                    });
-                }
-            }
-            else
-            {
-                MessageBox.Show(
-                    this,
-                    "Não foi possível iniciar o WebView2.\n\n" + exception.Message,
-                    AppName,
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
-
-            return tab;
-        }
+        AttachBrowserEvents(tab);
+        _toolTip.SetToolTip(tab.SelectButton, tab.IsInternalNewTab ? "Nova guia" : target ?? string.Empty);
+        return Task.FromResult<BrowserTab?>(tab);
     }
 
     /// <summary>Uma aba pode estar fechando: antes de agir, confirme que ela vive.</summary>
     private bool IsAlive(BrowserTab tab) => !tab.View.IsDisposed && _tabs.Contains(tab);
 
-    private Task<CoreWebView2Environment> GetEnvironmentAsync()
+    private bool PostToUi(Action action)
     {
-        _environmentTask ??= CreateEnvironmentAsync();
-        return _environmentTask;
-    }
+        if (IsDisposed || Disposing || !IsHandleCreated) return false;
 
-    private static Task<CoreWebView2Environment> CreateEnvironmentAsync()
-    {
-        AppPaths.EnsureDataDirectory();
-
-        var options = new CoreWebView2EnvironmentOptions
+        try
         {
-            AreBrowserExtensionsEnabled = true
-        };
-
-        return CoreWebView2Environment.CreateAsync(
-            userDataFolder: AppPaths.WebViewProfileDirectory,
-            options: options);
+            if (InvokeRequired) BeginInvoke(action);
+            else action();
+            return true;
+        }
+        catch (Exception exception) when (exception is InvalidOperationException)
+        {
+            // O Chromium pode emitir um último evento enquanto a janela está fechando.
+            return false;
+        }
     }
 
     private void ActivateTab(BrowserTab tab)
@@ -173,8 +135,7 @@ internal sealed partial class BrowserForm
 
         tab.View.BringToFront();
 
-        var source = tab.View.Source?.ToString();
-        _address.Text = tab.IsInternalNewTab ? string.Empty : source ?? string.Empty;
+        _address.Text = tab.IsInternalNewTab ? string.Empty : tab.View.Address ?? string.Empty;
 
         UpdateNavigationButtons(tab);
         RefreshBookmarkButton();
@@ -186,7 +147,7 @@ internal sealed partial class BrowserForm
         var index = _tabs.IndexOf(tab);
         if (index < 0) return;
 
-        var url = tab.View.Source?.ToString();
+        var url = tab.View.Address;
         if (AddressResolver.IsPersistable(url)) RememberClosedTab(url!);
 
         var wasActive = _activeTab == tab;
@@ -322,35 +283,6 @@ internal sealed partial class BrowserForm
         _tabStrip.PerformLayout();
     }
 
-    private async Task UpdateTabFaviconAsync(BrowserTab tab)
-    {
-        if (!IsAlive(tab) || tab.View.CoreWebView2 is not { } core) return;
-        if (string.IsNullOrWhiteSpace(core.FaviconUri))
-        {
-            SetTabFavicon(tab, null);
-            return;
-        }
-
-        try
-        {
-            using var stream = await core.GetFaviconAsync(CoreWebView2FaviconImageFormat.Png);
-            using var image = Image.FromStream(stream);
-            var favicon = new Bitmap(image, new Size(18, 18));
-            if (!IsAlive(tab))
-            {
-                favicon.Dispose();
-                return;
-            }
-
-            SetTabFavicon(tab, favicon);
-        }
-        catch (Exception exception) when (
-            exception is InvalidOperationException or IOException or ArgumentException or System.Runtime.InteropServices.COMException)
-        {
-            // Algumas páginas retiram o favicon antes de a imagem ficar disponível.
-        }
-    }
-
     private static void SetTabFavicon(BrowserTab tab, Image? favicon)
     {
         if (ReferenceEquals(tab.Favicon, favicon)) return;
@@ -360,20 +292,44 @@ internal sealed partial class BrowserForm
         previous?.Dispose();
     }
 
-    private void ShowNewTabPage(BrowserTab tab)
+    private async Task UpdateTabFaviconAsync(BrowserTab tab, string faviconUrl)
     {
-        if (tab.View.CoreWebView2 is null) return;
-        tab.IsInternalNewTab = true;
-        SetTabFavicon(tab, null);
-        tab.SelectButton.Text = tab.IsPinned ? string.Empty : "Nova guia";
-        _toolTip.SetToolTip(tab.SelectButton, "Nova guia");
-        tab.View.CoreWebView2.NavigateToString(NewTabPage.Build(_favorites.Items, _isPrivate));
-        if (tab == _activeTab) { _address.Clear(); UpdateWindowTitle(); }
+        try
+        {
+            Uri? uri;
+            if (!Uri.TryCreate(faviconUrl, UriKind.Absolute, out uri))
+            {
+                if (!Uri.TryCreate(tab.View.Address, UriKind.Absolute, out var pageUri) ||
+                    !Uri.TryCreate(pageUri, faviconUrl, out uri)) return;
+            }
+
+            using var response = await FaviconClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+            if (!response.IsSuccessStatusCode || response.Content.Headers.ContentLength is > 2_000_000) return;
+
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            if (bytes.Length is 0 or > 2_000_000) return;
+
+            using var stream = new MemoryStream(bytes);
+            using var image = Image.FromStream(stream, useEmbeddedColorManagement: false, validateImageData: true);
+            var favicon = new Bitmap(image, new Size(18, 18));
+
+            if (!PostToUi(() =>
+            {
+                if (!IsAlive(tab)) favicon.Dispose();
+                else SetTabFavicon(tab, favicon);
+            })) favicon.Dispose();
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or TaskCanceledException or IOException or ArgumentException or OutOfMemoryException or
+                System.Runtime.InteropServices.ExternalException)
+        {
+            // Algumas páginas retiram o favicon antes de a imagem ficar disponível.
+        }
     }
 
     private void UpdateTabTitle(BrowserTab tab)
     {
-        var title = tab.IsInternalNewTab ? "Nova guia" : tab.View.CoreWebView2?.DocumentTitle;
+        var title = tab.IsInternalNewTab ? "Nova guia" : tab.Title;
         var displayTitle = string.IsNullOrWhiteSpace(title) ? "Nova guia" : title;
         tab.SelectButton.Text = tab.IsPinned ? string.Empty : Shorten(displayTitle, 28);
         _toolTip.SetToolTip(tab.SelectButton, displayTitle);
@@ -383,7 +339,7 @@ internal sealed partial class BrowserForm
 
     private void UpdateWindowTitle()
     {
-        var title = _activeTab?.View.CoreWebView2?.DocumentTitle;
+        var title = _activeTab?.Title;
 
         var pageTitle = string.IsNullOrWhiteSpace(title) || title == "Nova guia"
             ? AppName
@@ -393,11 +349,9 @@ internal sealed partial class BrowserForm
 
     private void UpdateNavigationButtons(BrowserTab tab)
     {
-        var core = tab.View.CoreWebView2;
-
-        SetNavigationState(_backButton, core?.CanGoBack ?? false);
-        SetNavigationState(_forwardButton, core?.CanGoForward ?? false);
-        SetNavigationState(_reloadButton, core is not null);
+        SetNavigationState(_backButton, tab.View.CanGoBack);
+        SetNavigationState(_forwardButton, tab.View.CanGoForward);
+        SetNavigationState(_reloadButton, tab.View.IsBrowserInitialized);
     }
 
     private static void SetNavigationState(IconButton button, bool enabled)
@@ -412,7 +366,7 @@ internal sealed partial class BrowserForm
 
         foreach (var tab in _tabs)
         {
-            var url = tab.View.Source?.ToString();
+            var url = tab.View.Address;
             if (!AddressResolver.IsPersistable(url)) continue;
 
             if (tab == _activeTab) snapshot.ActiveIndex = snapshot.Tabs.Count;
@@ -420,7 +374,7 @@ internal sealed partial class BrowserForm
             snapshot.Tabs.Add(new SessionTab
             {
                 Url = url!,
-                Title = tab.View.CoreWebView2?.DocumentTitle ?? url!,
+                Title = tab.Title ?? url!,
                 IsPinned = tab.IsPinned
             });
         }
@@ -466,6 +420,8 @@ internal sealed partial class BrowserForm
         }
 
         _tabs.Clear();
+
+        _requestContext?.Dispose();
     }
 
     private static string Shorten(string value, int length)
@@ -476,7 +432,7 @@ internal sealed partial class BrowserForm
 
     private sealed class BrowserTab
     {
-        public BrowserTab(WebView2 view, bool isPinned)
+        public BrowserTab(ChromiumWebBrowser view, bool isPinned)
         {
             View = view;
             IsPinned = isPinned;
@@ -532,7 +488,9 @@ internal sealed partial class BrowserForm
             Header.Controls.Add(CloseButton);
         }
 
-        public WebView2 View { get; }
+        public ChromiumWebBrowser View { get; }
+
+        public string? Title { get; set; }
 
         public RoundedPanel Header { get; }
 
@@ -544,5 +502,11 @@ internal sealed partial class BrowserForm
         public bool IsPinned { get; set; }
         public DateTimeOffset LastNavigationStartedAt { get; set; }
         public bool IsInternalNewTab { get; set; }
+    }
+
+    private sealed class BrowserFaviconHandler(Action<IList<string>> onFaviconUrlsChanged) : CefSharp.Handler.DisplayHandler
+    {
+        protected override void OnFaviconUrlChange(IWebBrowser chromiumWebBrowser, IBrowser browser, IList<string> urls) =>
+            onFaviconUrlsChanged(urls);
     }
 }

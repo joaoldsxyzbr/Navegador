@@ -28,7 +28,11 @@ public static class AppPaths
     /// <summary>Pasta raiz dos dados (sessão, favoritos, histórico, perfil).</summary>
     public static string DataDirectory => ResolvedDataDirectory.Value;
 
-    public static string WebViewProfileDirectory => Path.Combine(DataDirectory, "WebView2");
+    /// <summary>Raiz isolada dos dados nativos do Chromium embutido.</summary>
+    public static string ChromiumRootDirectory => Path.Combine(DataDirectory, "Chromium");
+
+    /// <summary>Perfil persistente do motor (cookies, cache e extensões).</summary>
+    public static string ChromiumProfileDirectory => Path.Combine(ChromiumRootDirectory, "Profile");
 
     public static string SessionFile => Path.Combine(DataDirectory, "session.json");
 

@@ -2,14 +2,14 @@
 
 ## Decisão atual
 
-Rumo é o navegador Windows do repositório Navegador: C# / WinForms / .NET 10, usando WebView2 como motor. A release Chromium v0.1.0 é histórica.
+Rumo é o navegador Windows do repositório Navegador: C# / WinForms / .NET 10, usando CefSharp e Chromium incorporado. A release Chromium v0.1.0 é histórica; as versões WebView2 até v0.5.0 também são históricas.
 
 ## Projetos
 
 | Projeto | TFM | Responsabilidade |
 | --- | --- | --- |
 | Navegador.Core | net10.0 | caminhos, sessão, favoritos, histórico, configurações, resolução de endereço e protocolo do atualizador |
-| Navegador.Windows | net10.0-windows | shell WinForms, WebView2, downloads e atualização |
+| Navegador.Windows | net10.0-windows | shell WinForms, CefSharp/Chromium, downloads e atualização |
 | Navegador.Tests | net10.0 | testes do Core |
 
 A dependência é Windows → Core.
@@ -20,7 +20,7 @@ O shell usa barra de título própria, abas arredondadas, omnibox com foco desta
 
 ## Dados e modo portátil
 
-O diretório de dados é único: Data\ ao lado do executável quando a pasta é gravável, senão %LOCALAPPDATA%\Navegador. AppPaths.IsPortable reflete o diretório efetivamente escolhido. Perfil WebView2, sessão, favoritos, histórico e configurações seguem a mesma decisão.
+O diretório de dados é único: Data\ ao lado do executável quando a pasta é gravável, senão %LOCALAPPDATA%\Navegador. AppPaths.IsPortable reflete o diretório efetivamente escolhido. O perfil `Chromium\Profile`, sessão, favoritos, histórico e configurações seguem essa decisão. O perfil legado `WebView2` fica preservado e não é importado.
 
 ## Persistência
 
@@ -28,7 +28,7 @@ JSON é salvo por arquivo temporário + substituição. Arquivo ausente/corrompi
 
 ## Downloads
 
-O Navegador define a pasta de destino, evita sobrescrever silenciosamente arquivos com o mesmo nome, acompanha progresso e traduz os motivos oficiais de interrupção do WebView2.
+O Navegador define a pasta de destino, evita sobrescrever silenciosamente arquivos com o mesmo nome e acompanha progresso por meio do handler de downloads do CefSharp. Se a interface nativa de downloads do Chrome Runtime entrar em conflito com o handler, o CI não detecta esse comportamento; é necessária validação funcional no Windows.
 
 ## Atualização
 
@@ -41,17 +41,17 @@ O Navegador define a pasta de destino, evita sobrescrever silenciosamente arquiv
 
 ## Extensões
 
-Extensões Chromium locais descompactadas podem ser instaladas, ativadas e removidas. Chrome Web Store, ícones e popups não são presumidos porque o WebView2 não fornece a interface completa de um navegador Chromium.
+`CefSharpSettings.RuntimeStyle = CefRuntimeStyle.Chrome` habilita as páginas internas de Chromium e o suporte ao sistema de extensões. O shell abre `chrome://extensions/` em uma guia, e o modo de desenvolvedor permite testar extensões descompactadas. Janelas `chrome-extension://` podem ser popups nativos. O projeto não promete compatibilidade universal com APIs de extensão nem instalação pela Chrome Web Store; os fluxos e a barra de ações ainda precisam de teste manual com extensões reais.
 
 ## Processo de engenharia
 
 Mudanças significativas de arquitetura, UX, segurança, extensões, atualização e manutenção devem partir do problema do Rumo e comparar soluções já testadas em projetos open source relevantes. O processo e as referências canônicas ficam em [`REFERENCIAS-OPEN-SOURCE.md`](REFERENCIAS-OPEN-SOURCE.md).
 
-A comparação não altera a decisão de base atual: o Rumo continua em C# / WinForms / .NET 10 + WebView2. Referências externas servem para extrair princípios e padrões; limitações do WebView2 devem ser tratadas explicitamente, sem simular suporte inexistente.
+A decisão atual é C# / WinForms / .NET 10 + CefSharp/Chromium. Referências externas servem para extrair princípios e padrões; limites do runtime Chrome embutido devem ser tratados explicitamente.
 
 ## Publicação
 
-VERSION é a fonte única de versão. Releases só são disparadas por tag vX.Y.Z que combine com esse arquivo. O workflow roda testes, publica single-file x64, valida o pacote e cria a release.
+VERSION é a fonte única de versão. Releases só são disparadas por tag vX.Y.Z que combine com esse arquivo. O workflow roda testes, publica um pacote x64 self-contained com os arquivos nativos do Chromium ao lado de `Navegador.exe`, valida esses arquivos e cria a release.
 
 ## Mobile
 

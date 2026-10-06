@@ -5,7 +5,7 @@
 
   <!--
     Nem todo projeto é um projeto de teste. O app Windows depende do pacote
-    WebView2 e de WinForms, então os testes rodam apenas sobre o Core.
+    CefSharp/Chromium e de WinForms, então os testes rodam apenas sobre o Core.
   -->
   <PropertyGroup>
     <TestProject Condition="'$(TestProject)' == ''">false</TestProject>

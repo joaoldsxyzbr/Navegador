@@ -1,7 +1,7 @@
 #define ProductName "Rumo"
 #define ProductExecutable "Navegador.exe"
 #ifndef AppVersion
-  #define AppVersion "0.5.0"
+  #define AppVersion "0.6.0"
 #endif
 
 [Setup]
@@ -29,7 +29,7 @@ RestartApplications=no
 Name: "desktopicon"; Description: "Criar atalho na área de trabalho"; GroupDescription: "Atalhos:"; Flags: unchecked
 
 [Files]
-Source: "..\publish\Navegador\Navegador.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\publish\Navegador\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\assets\rumo.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".rumo-installed"; DestDir: "{app}"; Flags: ignoreversion
 

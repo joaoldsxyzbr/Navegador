@@ -1,6 +1,7 @@
 using Navegador.Core;
 using Navegador.Core.Storage;
 using Navegador.Windows.Ui;
+using CefSharp;
 
 namespace Navegador.Windows;
 
@@ -104,8 +105,8 @@ internal sealed partial class BrowserForm
 
     private async Task ClearBrowsingDataAsync()
     {
-        var profile = ActiveCore?.Profile;
-        if (profile is null)
+        var requestContext = ActiveCore?.RequestContext;
+        if (requestContext is null)
         {
             MessageBox.Show(this, "Aguarde a guia terminar de iniciar para limpar os dados.", AppName,
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -121,7 +122,21 @@ internal sealed partial class BrowserForm
 
         try
         {
-            await profile.ClearBrowsingDataAsync();
+            var completion = new TaskCompletionCallback();
+            requestContext.ClearHttpCache(completion);
+
+            var cookies = requestContext.GetCookieManager(null);
+            TaskCompletionCallback? cookieFlush = null;
+            if (cookies is not null)
+            {
+                cookies.DeleteCookies(string.Empty, string.Empty, null);
+                cookieFlush = new TaskCompletionCallback();
+                cookies.FlushStore(cookieFlush);
+            }
+
+            if (!await completion.Task)
+                throw new InvalidOperationException("O Chromium não confirmou a limpeza do cache.");
+            if (cookieFlush is not null) await cookieFlush.Task;
             if (IsDisposed) return;
             if (!_isPrivate)
             {

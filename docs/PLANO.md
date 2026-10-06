@@ -2,11 +2,12 @@
 
 ## Estado
 
-Linha Windows em C# / WinForms / .NET 10 + WebView2. O código está em 0.5.0 em preparação para release, com Core separado e testes.
+Linha Windows em C# / WinForms / .NET 10 + CefSharp/Chromium. A migração é a versão 0.6.0; o Core continua separado e testável.
 
 ## Fase 1 — Protótipo Windows
 
-- [x] WebView2, WinForms, abas, omnibox, navegação e tema escuro.
+- [x] WinForms, abas, omnibox, navegação e tema escuro.
+- [x] CefSharp com Chrome Runtime e perfil Chromium portátil.
 - [x] Perfil persistente com modo portátil.
 - [x] Extensões locais descompactadas.
 - [x] CI Windows.
@@ -37,8 +38,10 @@ Linha Windows em C# / WinForms / .NET 10 + WebView2. O código está em 0.5.0 em
 
 ## Fase 4 — Distribuição
 
-- [x] Oferecer a página oficial do WebView2 Runtime quando ele não está instalado.
+- [x] Distribuir Chromium e CefSharp com o app, sem exigir Edge WebView2 Runtime.
 - [x] Instalador opcional por usuário mantendo o ZIP portátil.
+- [ ] Validar no Windows uma instalação/remoção de extensão e o popup de uma extensão real.
+- [ ] Confirmar downloads e limpeza de cache em execução com Chrome Runtime.
 - [ ] Assinatura de código.
 
 ## Fase 5 — Mobile

@@ -18,7 +18,7 @@ jobs:
   release:
     name: Publicar pacote Windows x64
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,16 +46,39 @@ jobs:
         run: dotnet run --project desktop/Navegador.Tests/Navegador.Tests.csproj --configuration Release
       - name: Restaurar dependências
         run: dotnet restore desktop/Navegador.Windows/Navegador.Windows.csproj -r win-x64
-      - name: Publicar Windows x64 em arquivo único
-        run: dotnet publish desktop/Navegador.Windows/Navegador.Windows.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false --output publish/Navegador
+      - name: Publicar Windows x64 com Chromium incluído
+        run: dotnet publish desktop/Navegador.Windows/Navegador.Windows.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore -p:PublishSingleFile=false -p:PublishTrimmed=false -p:DebugType=None -p:DebugSymbols=false --output publish/Navegador
       - name: Limpar documentação de dependências
         shell: pwsh
         run: |
           Get-ChildItem publish/Navegador -File -Filter "*.xml" | Remove-Item -Force
+      - name: Incluir licenças do CefSharp e do Chromium
+        shell: pwsh
+        run: |
+          $packagesRoot = Join-Path $env:USERPROFILE ".nuget/packages"
+          $noticeRoot = "publish/Navegador/TERCEIROS"
+          New-Item -ItemType Directory -Force $noticeRoot | Out-Null
+          $packages = @(Get-ChildItem $packagesRoot -Directory | Where-Object { $_.Name -match "cefsharp|chromiumembeddedframework" })
+          foreach ($package in $packages) {
+            $licenseFiles = @(Get-ChildItem $package.FullName -Recurse -File | Where-Object { $_.Name -match "^(LICENSE|LICENSES|NOTICE)(\..*)?$" })
+            foreach ($license in $licenseFiles) {
+              $relative = [IO.Path]::GetRelativePath($package.FullName, $license.FullName)
+              $destination = Join-Path (Join-Path $noticeRoot $package.Name) $relative
+              New-Item -ItemType Directory -Force (Split-Path $destination) | Out-Null
+              Copy-Item $license.FullName $destination -Force
+            }
+          }
+          $included = @(Get-ChildItem $noticeRoot -Recurse -File)
+          if ($included.Count -eq 0) { throw "As licenças dos pacotes CefSharp/Chromium não foram encontradas no cache NuGet." }
+          Write-Host "Arquivos de licença incluídos: $($included.Count)"
       - name: Validar pacote
         shell: pwsh
         run: |
-          if (-not (Test-Path publish/Navegador/Navegador.exe)) { throw "Navegador.exe não foi gerado." }
+          $required = @("Navegador.exe", "CefSharp.BrowserSubprocess.exe", "libcef.dll", "icudtl.dat", "resources.pak")
+          foreach ($file in $required) {
+            $path = Join-Path "publish/Navegador" $file
+            if (-not (Test-Path $path)) { throw "Arquivo obrigatório do CefSharp/Chromium ausente: $path" }
+          }
           $files = @(Get-ChildItem publish/Navegador -Recurse -File)
           $relativeFiles = @($files | ForEach-Object { [IO.Path]::GetRelativePath((Resolve-Path "publish/Navegador"), $_.FullName) })
           Write-Host ("Arquivos publicados: " + ($relativeFiles -join ", "))
@@ -82,7 +105,7 @@ jobs:
           - se a pasta não for gravável, o fallback é %LOCALAPPDATA%\Navegador.
 
           Requisito:
-          - Microsoft Edge WebView2 Runtime.
+          - Windows 10/11 x64. O CefSharp e os arquivos do Chromium já estão incluídos.
           "@ | Set-Content -Encoding UTF8 publish/Navegador/LEIA-ME.txt
       - name: Empacotar
         shell: pwsh
@@ -117,7 +140,9 @@ jobs:
           - nova guia própria e shell refinado;
           - atualização integrada com SHA-256, handshake e rollback;
           - abas reordenáveis, favicons, abas fixas, sugestões na barra de endereço e tela cheia;
-          - janela InPrivate sem histórico/sessão e limpeza de dados;
+          - janela privada com contexto Chromium isolado e limpeza de dados;
+          - CefSharp com Chromium incluído no pacote, sem exigir Edge WebView2 Runtime;
+          - licenças dos componentes de terceiros dentro do pacote;
           - ZIP portátil e instalador opcional sem exigir administrador.
 
           Para usar o ZIP, extraia e abra Navegador.exe. O instalador cria atalhos e mantém o ZIP portátil disponível.
