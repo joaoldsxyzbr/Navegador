@@ -40,6 +40,11 @@ internal sealed class MainForm : Form
         toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 164F));
         toolbar.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
+        _browser = new ChromiumWebBrowser(StoreAddress)
+        {
+            Dock = DockStyle.Fill
+        };
+
         var go = MakeButton("Ir");
         go.Click += (_, _) => NavigateAddress();
         var extensions = MakeButton("Extensões");
@@ -48,11 +53,6 @@ internal sealed class MainForm : Form
         toolbar.Controls.Add(_address, 0, 0);
         toolbar.Controls.Add(go, 1, 0);
         toolbar.Controls.Add(extensions, 2, 0);
-
-        _browser = new ChromiumWebBrowser(StoreAddress)
-        {
-            Dock = DockStyle.Fill
-        };
 
         var profileNote = new Label
         {
