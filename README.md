@@ -37,7 +37,7 @@ O visual mantém a organização familiar do Chrome: faixa de abas, barra de end
 
 A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 
-Decisões relevantes de arquitetura, UX, segurança e manutenção seguem um processo de comparação com projetos open source maduros, documentado em [Referências open source](docs/REFERENCIAS-OPEN-SOURCE.md). A ideia é aprender com soluções já testadas sem copiar funcionalidades ou complexidade que não façam sentido para o Rumo.
+Decisões relevantes de arquitetura, UX, segurança e manutenção seguem um processo de comparação com projetos open source maduros, documentado em [Referências open source](docs/REFERENCIAS-OPEN-SOURCE.md). A decisão de manter WebView2, incluindo os critérios para uma eventual reavaliação, está em [Decisão do motor](docs/DECISAO-MOTOR.md). A ideia é aprender com soluções já testadas sem copiar funcionalidades ou complexidade que não façam sentido para o Rumo.
 
 ## O que o protótipo já faz
 
