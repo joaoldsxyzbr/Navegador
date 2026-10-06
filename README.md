@@ -10,10 +10,10 @@ O Rumo é um navegador para Windows feito em C# / WinForms, com Chromium incorpo
 
 Cada release oferece duas opções: instalador por usuário e ZIP portátil.
 
-- **Instalador**: execute o arquivo `Rumo-v…-setup.exe` e siga as etapas. Ele cria atalhos no menu Iniciar e, se você escolher, na área de trabalho. Não exige elevação de administrador.
-- **Portátil**: baixe o ZIP, extraia a pasta inteira e abra `Navegador.exe`.
+- **Instalador**: execute o arquivo `Rumo-v…-setup.exe` e siga as etapas. Ele cria atalhos no menu Iniciar e, se você escolher, na área de trabalho. Se o runtime C++ necessário não estiver presente, o Windows pedirá autorização para instalá-lo.
+- **Portátil**: baixe o ZIP e extraia a pasta inteira. Em uma máquina sem o Microsoft Visual C++ 2022 x64, execute `VC_redist.x64.exe` como administrador uma vez; depois abra `Navegador.exe`.
 
-Os pacotes são self-contained: não exigem instalação separada do .NET nem do Microsoft Edge WebView2 Runtime. O ZIP contém o executável e os arquivos do Chromium; extraia a pasta inteira e mantenha esses arquivos juntos.
+Os pacotes incluem o .NET, CefSharp, Chromium e o instalador oficial do runtime Visual C++ 2022 x64. Não exigem o Microsoft Edge WebView2 Runtime. O ZIP contém todos esses arquivos; extraia a pasta inteira e mantenha-os juntos.
 
 ## Onde ficam os dados
 
@@ -136,3 +136,4 @@ Como alternativa operacional pelo próprio GitHub, uma branch `release/vX.Y.Z` a
 - `v0.4.0`: atualização integrada de um clique usando GitHub Releases.
 - `v0.5.0`: marca Rumo, correção da maximização, modo InPrivate, limpeza de dados, favicons e controles de abas, sugestões na omnibox, tela cheia e instalador opcional; inclui também o Core separado, sessão, favoritos, histórico, downloads, nova guia e atualização integrada.
 - `v0.6.0`: motor CefSharp/Chromium distribuído com o app, perfil independente, suporte à página interna de extensões e pacotes ZIP/instalador com os arquivos nativos do Chromium.
+- `v0.6.1`: inclui o runtime Microsoft Visual C++ 2022 x64 exigido pelo CefSharp; o setup verifica e instala esse pré-requisito quando necessário.

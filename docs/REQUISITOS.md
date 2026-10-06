@@ -4,6 +4,7 @@
 
 - C# / WinForms / .NET 10.
 - CefSharp com Chromium pré-compilado incluído nos pacotes; não compilar Chromium/Firefox no CI.
+- Distribuir o instalador oficial do Microsoft Visual C++ 2022 Redistributable x64; o setup do Rumo instala o runtime se necessário, e o ZIP portátil o disponibiliza ao lado do executável.
 - Visual próximo do Chrome, mantendo identidade Rumo.
 - Logo de bússola azul/ciano na nova guia e no ícone do executável.
 - Tema escuro.

@@ -22,6 +22,10 @@ O shell usa barra de título própria, abas arredondadas, omnibox com foco desta
 
 O diretório de dados é único: Data\ ao lado do executável quando a pasta é gravável, senão %LOCALAPPDATA%\Navegador. AppPaths.IsPortable reflete o diretório efetivamente escolhido. O perfil `Chromium\Profile`, sessão, favoritos, histórico e configurações seguem essa decisão. O perfil legado `WebView2` fica preservado e não é importado.
 
+## Distribuição e runtime
+
+O CefSharp 152 requer o Microsoft Visual C++ 2022 Redistributable x64. A release inclui o instalador oficial da Microsoft: o setup do Rumo o executa se o runtime não estiver instalado, enquanto a distribuição ZIP deixa o instalador ao lado do executável para uso em uma máquina limpa. O aplicativo não depende do Edge WebView2 Runtime.
+
 ## Persistência
 
 JSON é salvo por arquivo temporário + substituição. Arquivo ausente/corrompido volta para um estado seguro. A sessão remove URLs não persistíveis e preserva a aba ativa.

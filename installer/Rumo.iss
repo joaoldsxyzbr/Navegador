@@ -1,7 +1,7 @@
 #define ProductName "Rumo"
 #define ProductExecutable "Navegador.exe"
 #ifndef AppVersion
-  #define AppVersion "0.6.0"
+  #define AppVersion "0.6.1"
 #endif
 
 [Setup]
@@ -38,4 +38,21 @@ Name: "{autoprograms}\Rumo"; Filename: "{app}\{#ProductExecutable}"; IconFilenam
 Name: "{autodesktop}\Rumo"; Filename: "{app}\{#ProductExecutable}"; IconFilename: "{app}\rumo.ico"; Tasks: desktopicon
 
 [Run]
+Filename: "{app}\VC_redist.x64.exe"; Parameters: "/install /quiet /norestart"; StatusMsg: "Instalando o runtime Microsoft Visual C++ 2022 x64..."; Flags: waituntilterminated; Check: not IsVc2022RuntimeInstalled
 Filename: "{app}\{#ProductExecutable}"; Description: "Abrir o Rumo"; Flags: nowait postinstall skipifsilent
+
+[Code]
+function IsVc2022RuntimeInstalled: Boolean;
+var
+  Installed, Major, Minor: Cardinal;
+begin
+  Result := False;
+  if RegQueryDWordValue(HKLM64, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64', 'Installed', Installed) and (Installed = 1) then
+  begin
+    if RegQueryDWordValue(HKLM64, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64', 'Major', Major) and
+       RegQueryDWordValue(HKLM64, 'SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64', 'Minor', Minor) then
+    begin
+      Result := (Major > 14) or ((Major = 14) and (Minor >= 30));
+    end;
+  end;
+end;
