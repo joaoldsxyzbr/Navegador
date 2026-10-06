@@ -11,7 +11,7 @@ O Rumo é um navegador para Windows feito em C# / WinForms, com Chromium incorpo
 Cada release oferece duas opções: instalador por usuário e ZIP portátil.
 
 - **Instalador**: execute o arquivo `Rumo-v…-setup.exe` e siga as etapas. Ele cria atalhos no menu Iniciar e, se você escolher, na área de trabalho. Se o runtime C++ necessário não estiver presente, o Windows pedirá autorização para instalá-lo.
-- **Portátil**: baixe `Rumo-v…-windows-x64-portable.zip` e extraia. Abra `Abrir Rumo.cmd`; os arquivos do Chromium ficam juntos dentro da pasta `Rumo`.
+- **Portátil**: baixe `Rumo-v…-windows-x64-portable.zip` e extraia. Abra `Abrir Rumo.cmd`; os arquivos do Chromium ficam juntos dentro da pasta `Rumo`. Se o runtime Visual C++ necessário estiver faltando, o Rumo oferece instalá-lo antes de iniciar.
 
 Os pacotes incluem o .NET, CefSharp, Chromium e o instalador oficial do runtime Visual C++ 2022 x64. Não exigem o Microsoft Edge WebView2 Runtime. O ZIP contém todos esses arquivos; extraia a pasta inteira e mantenha-os juntos.
 
@@ -140,3 +140,4 @@ Como alternativa operacional pelo próprio GitHub, uma branch `release/vX.Y.Z` a
 - `v0.6.0`: motor CefSharp/Chromium distribuído com o app, perfil independente, suporte à página interna de extensões e pacotes ZIP/instalador com os arquivos nativos do Chromium.
 - `v0.6.1`: inclui o runtime Microsoft Visual C++ 2022 x64 exigido pelo CefSharp; o setup verifica e instala esse pré-requisito quando necessário.
 - `v0.6.2`: organiza o ZIP portátil em uma pasta `Rumo` com iniciador visível, mantendo separado o pacote plano usado pelo atualizador interno.
+- `v0.6.3`: verifica o runtime Visual C++ antes de carregar o CefSharp e oferece instalar a cópia incluída quando necessário; valida também o assembly nativo do CefSharp no pacote.

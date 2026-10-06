@@ -84,7 +84,7 @@ jobs:
       - name: Validar pacote
         shell: pwsh
         run: |
-          $required = @("Navegador.exe", "CefSharp.BrowserSubprocess.exe", "libcef.dll", "icudtl.dat", "resources.pak", "VC_redist.x64.exe")
+          $required = @("Navegador.exe", "CefSharp.Core.Runtime.dll", "CefSharp.BrowserSubprocess.exe", "libcef.dll", "icudtl.dat", "resources.pak", "VC_redist.x64.exe")
           foreach ($file in $required) {
             $path = Join-Path "publish/Navegador" $file
             if (-not (Test-Path $path)) { throw "Arquivo obrigatório do CefSharp/Chromium ausente: $path" }
@@ -105,8 +105,7 @@ jobs:
 
           PARA ABRIR:
           1. Extraia todo o ZIP.
-          2. Em uma máquina sem o Microsoft Visual C++ 2022 x64, execute VC_redist.x64.exe como administrador uma vez.
-          3. Abra Navegador.exe.
+          2. Abra Navegador.exe. Se o runtime Microsoft Visual C++ 2022 x64 faltar, o Rumo oferece instalá-lo com o arquivo incluído.
 
           Atualizações:
           - use o botão Atualizar na barra superior ou Menu (⋮) > Atualizar Navegador.
@@ -142,8 +141,7 @@ jobs:
           1. Extraia esta pasta inteira.
           2. Abra Abrir Rumo.cmd, ou Rumo\Navegador.exe.
 
-          Se o Microsoft Visual C++ 2022 x64 não estiver instalado:
-          - execute Rumo\VC_redist.x64.exe como administrador antes de abrir o navegador.
+          Na primeira abertura, se o runtime Microsoft Visual C++ 2022 x64 estiver faltando, o Rumo oferece a instalação do arquivo incluído. Autorize a solicitação do Windows; depois o navegador inicia.
 
           Mantenha a pasta Rumo completa. Ela contém Chromium, CefSharp e os arquivos do navegador.
           "@ | Set-Content -Encoding UTF8 (Join-Path $portableRoot "LEIA-ME.txt")
@@ -162,7 +160,7 @@ jobs:
           $archive = [IO.Compression.ZipFile]::OpenRead($portableZip)
           try {
             $archiveEntries = @($archive.Entries | ForEach-Object { $_.FullName })
-            $requiredEntries = @("LEIA-ME.txt", "Abrir Rumo.cmd", "Rumo/Navegador.exe", "Rumo/VC_redist.x64.exe", "Rumo/libcef.dll")
+            $requiredEntries = @("LEIA-ME.txt", "Abrir Rumo.cmd", "Rumo/Navegador.exe", "Rumo/CefSharp.Core.Runtime.dll", "Rumo/VC_redist.x64.exe", "Rumo/libcef.dll")
             foreach ($entry in $requiredEntries) {
               if ($entry -notin $archiveEntries) { throw "Arquivo ausente no ZIP portátil: $entry" }
             }
@@ -198,6 +196,7 @@ jobs:
           - janela privada com contexto Chromium isolado e limpeza de dados;
           - CefSharp e Chromium incluídos no pacote, sem exigir Edge WebView2 Runtime;
           - o setup instala o runtime Microsoft Visual C++ 2022 x64 se necessário;
+          - o Rumo verifica o runtime no primeiro uso e oferece instalar a cópia incluída quando necessário;
           - ZIP portátil com pasta Rumo e iniciador Abrir Rumo.cmd;
           - licenças dos componentes de terceiros dentro do pacote;
           - instalador por usuário; a instalação do runtime Visual C++ solicita elevação somente quando necessário.

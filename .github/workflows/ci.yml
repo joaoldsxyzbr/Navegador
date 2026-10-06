@@ -62,7 +62,7 @@ jobs:
       - name: Conferir os arquivos obrigatórios do Chromium
         shell: pwsh
         run: |
-          $required = @("Navegador.exe", "CefSharp.BrowserSubprocess.exe", "libcef.dll", "icudtl.dat", "resources.pak")
+          $required = @("Navegador.exe", "CefSharp.Core.Runtime.dll", "CefSharp.BrowserSubprocess.exe", "libcef.dll", "icudtl.dat", "resources.pak")
           foreach ($file in $required) {
             $path = Join-Path "publish/Navegador" $file
             if (-not (Test-Path $path)) { throw "Arquivo obrigatório do CefSharp/Chromium ausente: $path" }

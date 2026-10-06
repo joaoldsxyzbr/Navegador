@@ -55,5 +55,6 @@ public static class TestRunner
         AddressResolverTests.Cases
             .Concat(AddressSuggestionTests.Cases)
             .Concat(StoreTests.Cases)
+            .Concat(VisualCppRuntimeTests.Cases)
             .Concat(UpdateTests.Cases);
 }
