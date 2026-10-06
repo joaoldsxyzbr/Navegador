@@ -111,4 +111,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          gh release create "${{ github.ref_name }}" "dist/Rumo-v$version-windows-x64.zip" "dist/Rumo-v$version-windows-x64.zip.sha256" "dist/Rumo-v$version-windows-x64-setup.exe" "dist/Rumo-v$version-windows-x64-setup.exe.sha256" --target "${{ github.sha }}" --title "Rumo v$version" --notes-file release-notes.md
+          $tag = "${{ github.ref_name }}"
+          $files = @(
+            "dist/Rumo-v$version-windows-x64.zip",
+            "dist/Rumo-v$version-windows-x64.zip.sha256",
+            "dist/Rumo-v$version-windows-x64-setup.exe",
+            "dist/Rumo-v$version-windows-x64-setup.exe.sha256"
+          )
+          gh release view $tag --json tagName 2>$null
+          $releaseExists = $LASTEXITCODE -eq 0
+          if ($releaseExists) {
+            gh release upload $tag @files --clobber
+            if ($LASTEXITCODE -ne 0) { throw "O upload dos pacotes para a release existente falhou." }
+            gh release edit $tag --title "Rumo v$version" --notes-file release-notes.md
+          } else {
+            gh release create $tag @files --target "${{ github.sha }}" --title "Rumo v$version" --notes-file release-notes.md
+          }
+          if ($LASTEXITCODE -ne 0) { throw "A publicação da release falhou." }
