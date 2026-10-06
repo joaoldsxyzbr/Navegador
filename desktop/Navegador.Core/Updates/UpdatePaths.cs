@@ -14,6 +14,8 @@ public static class UpdatePaths
     private const string StagingFolderName = "staging";
     private const string BackupFolderName = "backup";
     private const string DownloadedPackageName = "package.zip";
+    private const string HelperFileName = "Navegador.Atualizador.exe";
+    private const string ReadyFileName = "helper.ready";
 
     public static string Root { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -40,8 +42,9 @@ public static class UpdatePaths
     public static string StagingDirectory(string updateDirectory) =>
         Path.Combine(updateDirectory, StagingFolderName);
 
-    public static string BackupDirectory(string updateDirectory) =>
-        Path.Combine(updateDirectory, BackupFolderName);
+    public static string BackupDirectory(string updateDirectory) => Path.Combine(updateDirectory, BackupFolderName);
+    public static string HelperFile(string updateDirectory) => Path.Combine(updateDirectory, HelperFileName);
+    public static string ReadyFile(string updateDirectory) => Path.Combine(updateDirectory, ReadyFileName);
 
     /// <summary>Verdadeiro quando o caminho está debaixo da raiz de atualizações.</summary>
     public static bool IsInsideRoot(string path)

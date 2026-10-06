@@ -75,6 +75,7 @@ internal sealed partial class BrowserForm : Form
     };
 
     private readonly List<BrowserTab> _tabs = [];
+    private readonly List<string> _closedTabs = [];
     private readonly FavoritesStore _favorites;
     private readonly HistoryStore _history;
     private readonly SettingsStore _settings;
@@ -87,6 +88,7 @@ internal sealed partial class BrowserForm : Form
     private readonly IconButton _reloadButton;
     private readonly IconButton _bookmarkButton;
     private readonly IconButton _downloadsButton;
+    private readonly IconButton _updateButton;
     private readonly IconButton _extensionsButton;
     private readonly IconButton _menuButton;
     private readonly WindowButton _maximizeButton;
@@ -115,7 +117,7 @@ internal sealed partial class BrowserForm : Form
         KeyPreview = true;
         DoubleBuffered = true;
 
-        _newTabButton = CreateIconButton("+", "Nova guia", TitleBarColor, Theme.Icon(14F));
+        _newTabButton = CreateIconButton(BrowserIcon.Add, "Nova guia", TitleBarColor);
         _newTabButton.Size = new Size(34, 34);
         _newTabButton.Margin = new Padding(4, 4, 0, 4);
         _newTabButton.Click += async (_, _) => await AddTabAsync();
@@ -150,33 +152,39 @@ internal sealed partial class BrowserForm : Form
         titleRow.Controls.Add(_maximizeButton, 2, 0);
         titleRow.Controls.Add(closeButton, 3, 0);
 
-        _backButton = CreateIconButton("←", "Voltar", ToolbarColor);
-        _forwardButton = CreateIconButton("→", "Avançar", ToolbarColor);
-        _reloadButton = CreateIconButton("↻", "Recarregar", ToolbarColor, Theme.Symbol(13F));
-        _bookmarkButton = CreateIconButton("☆", "Adicionar aos favoritos", ToolbarColor, Theme.Symbol(13F));
-        _downloadsButton = CreateIconButton("⤓", "Downloads", ToolbarColor, Theme.Symbol(13F));
-        _extensionsButton = CreateIconButton("⬡", "Extensões", ToolbarColor, Theme.Symbol(12F));
-        _menuButton = CreateIconButton("⋮", "Menu", ToolbarColor, Theme.Icon(15F));
+        _backButton = CreateIconButton(BrowserIcon.Back, "Voltar", ToolbarColor);
+        _forwardButton = CreateIconButton(BrowserIcon.Forward, "Avançar", ToolbarColor);
+        _reloadButton = CreateIconButton(BrowserIcon.Reload, "Recarregar", ToolbarColor);
+        _bookmarkButton = CreateIconButton(BrowserIcon.Star, "Adicionar aos favoritos", ToolbarColor);
+        _downloadsButton = CreateIconButton(BrowserIcon.Download, "Downloads", ToolbarColor);
+        _updateButton = CreateIconButton(BrowserIcon.Update, "Atualizar Navegador", ToolbarColor);
+        _extensionsButton = CreateIconButton(BrowserIcon.Extensions, "Extensões", ToolbarColor);
+        _menuButton = CreateIconButton(BrowserIcon.Menu, "Menu", ToolbarColor);
 
         _backButton.Click += (_, _) => NavigateBack();
         _forwardButton.Click += (_, _) => NavigateForward();
         _reloadButton.Click += (_, _) => ReloadActiveTab();
         _bookmarkButton.Click += (_, _) => ToggleFavoriteForActiveTab();
         _downloadsButton.Click += (_, _) => ShowDownloads();
+        _updateButton.Click += async (_, _) => await CheckForUpdatesAsync();
         _extensionsButton.Click += (_, _) => OpenExtensions();
 
         _browserMenu = BuildBrowserMenu();
         _menuButton.Click += (_, _) => _browserMenu.Show(_menuButton, new Point(0, _menuButton.Height));
 
+        _addressShell.BorderColor = Theme.AddressBorder;
+        _addressShell.BorderWidth = 1F;
         _addressShell.Controls.Add(_address);
         _address.Enter += (_, _) =>
         {
             _addressShell.BackColor = AddressFocusColor;
+            _addressShell.BorderColor = Theme.Accent;
             _address.BackColor = AddressFocusColor;
         };
         _address.Leave += (_, _) =>
         {
             _addressShell.BackColor = AddressColor;
+            _addressShell.BorderColor = Theme.AddressBorder;
             _address.BackColor = AddressColor;
         };
         _address.KeyDown += (_, eventArgs) =>
@@ -189,13 +197,13 @@ internal sealed partial class BrowserForm : Form
         var toolbar = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            ColumnCount = 8,
+            ColumnCount = 9,
             RowCount = 1,
             BackColor = ToolbarColor,
             Margin = Padding.Empty,
             Padding = new Padding(6, 2, 6, 2)
         };
-        for (var index = 0; index < 8; index++)
+        for (var index = 0; index < 9; index++)
         {
             toolbar.ColumnStyles.Add(new ColumnStyle(
                 index == 3 ? SizeType.Percent : SizeType.Absolute,
@@ -209,8 +217,9 @@ internal sealed partial class BrowserForm : Form
         toolbar.Controls.Add(_addressShell, 3, 0);
         toolbar.Controls.Add(_bookmarkButton, 4, 0);
         toolbar.Controls.Add(_downloadsButton, 5, 0);
-        toolbar.Controls.Add(_extensionsButton, 6, 0);
-        toolbar.Controls.Add(_menuButton, 7, 0);
+        toolbar.Controls.Add(_updateButton, 6, 0);
+        toolbar.Controls.Add(_extensionsButton, 7, 0);
+        toolbar.Controls.Add(_menuButton, 8, 0);
 
         var root = new TableLayoutPanel
         {
@@ -222,8 +231,8 @@ internal sealed partial class BrowserForm : Form
             Padding = Padding.Empty
         };
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
 
         _favoritesRowStyle = new RowStyle(SizeType.Absolute, 0);
         root.RowStyles.Add(_favoritesRowStyle);
@@ -261,17 +270,17 @@ internal sealed partial class BrowserForm : Form
         FormClosing += OnFormClosing;
     }
 
-    private IconButton CreateIconButton(string text, string accessibleName, Color background, Font? font = null)
+    private IconButton CreateIconButton(BrowserIcon icon, string accessibleName, Color background)
     {
         var button = new IconButton
         {
-            Text = text,
+            Icon = icon,
             AccessibleName = accessibleName,
             Dock = DockStyle.Fill,
             BackColor = background,
             ForeColor = TextColor,
-            Font = font ?? Theme.Icon(),
-            Margin = new Padding(3, 4, 3, 4)
+            Font = Theme.Icon(),
+            Margin = new Padding(3, 5, 3, 5)
         };
 
         _toolTip.SetToolTip(button, accessibleName);

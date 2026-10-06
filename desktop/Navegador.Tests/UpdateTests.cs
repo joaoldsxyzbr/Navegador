@@ -216,19 +216,19 @@ public static class UpdateTests
             var own = Navegador.Core.AppPaths.BaseDirectory;
 
             // Não deve lançar.
-            UpdateApplyPolicy.EnsureInstallDirectoryMatches(own);
-            UpdateApplyPolicy.EnsureInstallDirectoryMatches(own.TrimEnd('\\') + "\\");
+            UpdateApplyPolicy.EnsureInstallDirectoryMatches(own, own);
+            UpdateApplyPolicy.EnsureInstallDirectoryMatches(own.TrimEnd('\\') + "\\", own);
 
             Assert.Throws<InvalidOperationException>(() =>
-                UpdateApplyPolicy.EnsureInstallDirectoryMatches(@"C:\Windows\System32"));
+                UpdateApplyPolicy.EnsureInstallDirectoryMatches(@"C:\Windows\System32", own));
             Assert.Throws<InvalidOperationException>(() =>
-                UpdateApplyPolicy.EnsureInstallDirectoryMatches(@"C:\PastaInventada\Navegador"));
+                UpdateApplyPolicy.EnsureInstallDirectoryMatches(@"C:\PastaInventada\Navegador", own));
         }),
 
         new("instalação: diretório vazio é recusado", () =>
         {
             Assert.Throws<InvalidOperationException>(() =>
-                UpdateApplyPolicy.EnsureInstallDirectoryMatches("   "));
+                UpdateApplyPolicy.EnsureInstallDirectoryMatches("   ", Navegador.Core.AppPaths.BaseDirectory));
         }),
 
         new("pacote: só a pasta de atualizações é aceita", () =>
@@ -250,6 +250,24 @@ public static class UpdateTests
             Assert.False(UpdatePaths.IsInsideRoot(UpdatePaths.Root));
             Assert.False(UpdatePaths.IsInsideRoot(@"C:\Windows"));
             Assert.False(UpdatePaths.IsInsideRoot(""));
+        }),
+
+        new("helper: precisa ficar na raiz segura de atualizações e fora da instalação", () =>
+        {
+            var helper = Path.Combine(UpdatePaths.Root, "0.5.0-teste", "Navegador.Atualizador.exe");
+            UpdateApplyPolicy.EnsureHelperLocation(helper, Navegador.Core.AppPaths.BaseDirectory);
+            Assert.Throws<InvalidOperationException>(() =>
+                UpdateApplyPolicy.EnsureHelperLocation(Path.Combine(Navegador.Core.AppPaths.BaseDirectory, "Navegador.Atualizador.exe"), Navegador.Core.AppPaths.BaseDirectory));
+            Assert.Throws<InvalidOperationException>(() =>
+                UpdateApplyPolicy.EnsureHelperLocation(@"C:\Temp\Navegador.Atualizador.exe", Navegador.Core.AppPaths.BaseDirectory));
+        }),
+
+        new("executável principal: precisa pertencer à instalação informada", () =>
+        {
+            var install = @"C:\Apps\Navegador";
+            UpdateApplyPolicy.EnsureExecutableBelongsToInstallDirectory(@"C:\Apps\Navegador\Navegador.exe", install);
+            Assert.Throws<InvalidOperationException>(() =>
+                UpdateApplyPolicy.EnsureExecutableBelongsToInstallDirectory(@"C:\OutraPasta\Navegador.exe", install));
         }),
 
         new("executável: assinatura PE é reconhecida", () =>

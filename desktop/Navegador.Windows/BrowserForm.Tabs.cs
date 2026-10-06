@@ -31,7 +31,7 @@ internal sealed partial class BrowserForm
             }
         }
 
-        await AddTabAsync();
+        await AddTabAsync(_settings.Current.HomeUrl);
         RefreshFavoritesBar();
     }
 
@@ -69,11 +69,17 @@ internal sealed partial class BrowserForm
 
             AttachBrowserEvents(tab);
 
-            var target = AddressResolver.IsPersistable(initialAddress)
-                ? initialAddress!
-                : _settings.Current.HomeUrl;
+            if (string.IsNullOrWhiteSpace(initialAddress))
+            {
+                ShowNewTabPage(tab);
+            }
+            else
+            {
+                var target = AddressResolver.IsPersistable(initialAddress) ? initialAddress! : AddressResolver.Resolve(initialAddress);
+                if (string.IsNullOrWhiteSpace(target)) ShowNewTabPage(tab);
+                else view.CoreWebView2!.Navigate(target);
+            }
 
-            view.CoreWebView2!.Navigate(target);
             return tab;
         }
         catch (Exception exception)
@@ -135,7 +141,7 @@ internal sealed partial class BrowserForm
         tab.View.BringToFront();
 
         var source = tab.View.Source?.ToString();
-        _address.Text = source ?? string.Empty;
+        _address.Text = tab.IsInternalNewTab ? string.Empty : source ?? string.Empty;
 
         UpdateNavigationButtons(tab);
         RefreshBookmarkButton();
@@ -146,6 +152,9 @@ internal sealed partial class BrowserForm
     {
         var index = _tabs.IndexOf(tab);
         if (index < 0) return;
+
+        var url = tab.View.Source?.ToString();
+        if (AddressResolver.IsPersistable(url)) RememberClosedTab(url!);
 
         var wasActive = _activeTab == tab;
 
@@ -172,12 +181,38 @@ internal sealed partial class BrowserForm
         if (_activeTab is not null) CloseTab(_activeTab);
     }
 
+    private void RememberClosedTab(string url)
+    {
+        _closedTabs.Add(url);
+        if (_closedTabs.Count > 20) _closedTabs.RemoveAt(0);
+    }
+
+    private void ReopenClosedTab()
+    {
+        if (_closedTabs.Count == 0) return;
+        var index = _closedTabs.Count - 1;
+        var url = _closedTabs[index];
+        _closedTabs.RemoveAt(index);
+        _ = AddTabAsync(url);
+    }
+
+    private void ShowNewTabPage(BrowserTab tab)
+    {
+        if (tab.View.CoreWebView2 is null) return;
+        tab.IsInternalNewTab = true;
+        tab.SelectButton.Text = "Nova guia";
+        tab.View.CoreWebView2.NavigateToString(NewTabPage.Build(_favorites.Items));
+        if (tab == _activeTab) { _address.Clear(); UpdateWindowTitle(); }
+    }
+
     private void UpdateTabTitle(BrowserTab tab)
     {
-        var title = tab.View.CoreWebView2?.DocumentTitle;
-        tab.SelectButton.Text = string.IsNullOrWhiteSpace(title)
-            ? "Nova guia"
-            : Shorten(title, 26);
+        if (tab.IsInternalNewTab) tab.SelectButton.Text = "Nova guia";
+        else
+        {
+            var title = tab.View.CoreWebView2?.DocumentTitle;
+            tab.SelectButton.Text = string.IsNullOrWhiteSpace(title) ? "Nova guia" : Shorten(title, 28);
+        }
 
         if (tab == _activeTab) UpdateWindowTitle();
     }
@@ -270,11 +305,11 @@ internal sealed partial class BrowserForm
         {
             View = view;
 
-            Header = new RoundedPanel(11)
+            Header = new RoundedPanel(12)
             {
-                Width = 220,
-                Height = 36,
-                Margin = new Padding(3, 6, 0, 0),
+                Width = 238,
+                Height = 38,
+                Margin = new Padding(4, 5, 0, 0),
                 BackColor = Theme.TitleBar
             };
 
@@ -284,10 +319,10 @@ internal sealed partial class BrowserForm
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Theme.TitleBar,
                 ForeColor = Theme.Text,
-                Font = Theme.Ui(9.5F),
+                Font = Theme.Ui(9.25F),
                 Text = "Nova guia",
                 TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(12, 0, 0, 0),
+                Padding = new Padding(14, 0, 0, 0),
                 UseVisualStyleBackColor = false,
                 Cursor = Cursors.Hand,
                 TabStop = false
@@ -325,5 +360,6 @@ internal sealed partial class BrowserForm
         public Button SelectButton { get; }
 
         public Button CloseButton { get; }
+        public bool IsInternalNewTab { get; set; }
     }
 }

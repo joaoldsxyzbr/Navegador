@@ -2,47 +2,45 @@
 
 ## Estado
 
-A direção é um app Windows próprio em C# / WinForms com WebView2, com a lógica testável separada em `Navegador.Core`. O protótipo está na versão `0.5.0`.
+Linha Windows em C# / WinForms / .NET 10 + WebView2. O código está em 0.5.0 em preparação para release, com Core separado e testes.
 
-## Fase 1 — Protótipo Windows (concluída)
+## Fase 1 — Protótipo Windows
 
-- [x] Definir WebView2 para PC e começar pelo Windows.
-- [x] Criar app WinForms com motor WebView2.
-- [x] Implementar abas, endereço/busca, voltar, avançar, recarregar e tema escuro.
-- [x] Criar perfil persistente.
-- [x] Habilitar API de extensões e criar tela para instalar pasta local, ativar, desativar e remover.
-- [x] Compilar e validar no CI Windows.
-- [x] Comparar a composição visual com o Chrome (barra de título, abas, omnibox, menus).
+- [x] WebView2, WinForms, abas, omnibox, navegação e tema escuro.
+- [x] Perfil persistente com modo portátil.
+- [x] Extensões locais descompactadas.
+- [x] CI Windows.
 
-## Fase 2 — MVP completo (concluída em 0.5.0)
+## Fase 2 — MVP de uso diário
 
-- [x] Favoritos: estrela, barra de favoritos, janela com busca, renomear e remover.
-- [x] Histórico: registro, busca, remoção e limpeza total.
-- [x] Downloads: pasta de destino, pergunta opcional, faixa de progresso e gerenciador.
-- [x] Sessão: reabrir as abas anteriores.
-- [x] Configurações, com página inicial e caminho de dados visível.
+- [x] Favoritos.
+- [x] Histórico.
+- [x] Downloads.
+- [x] Sessão restaurável.
+- [x] Configurações.
 - [x] Instância única.
-- [x] Separar `Navegador.Core` e cobrir a lógica com testes que rodam sem NuGet.
-- [x] Endurecer o atualizador: token de uso único, destino fixo, hash conferido no auxiliar e rollback.
-- [x] Centralizar a versão em `VERSION` e publicar por etiqueta.
+- [x] Atualização integrada com SHA-256 e rollback.
+- [x] Core testável.
+- [x] Nova guia própria com pesquisa e atalhos.
+- [x] Reabrir guia fechada com Ctrl+Shift+T.
 
-## Fase 3 — Polimento do shell
+## Fase 3 — Polimento
 
-- [ ] Favicons nas abas e nos favoritos.
-- [ ] Reordenar abas arrastando, fixar aba e reabrir aba fechada (`Ctrl+Shift+T`).
-- [ ] Autocompletar na barra de endereço usando o histórico.
-- [ ] Menu de contexto na página (abrir link em nova aba, copiar endereço, salvar imagem).
-- [ ] Janela privada e limpeza de dados pela interface.
-- [ ] Página inicial própria, com atalhos e busca.
+- [ ] Favicons nas abas/favoritos.
+- [ ] Arrastar/reordenar abas.
+- [ ] Fixar abas.
+- [ ] Autocomplete da omnibox usando histórico.
+- [ ] Menu de contexto de página.
+- [ ] Janela privada e limpeza de dados.
+- [ ] Refinar visual com screenshots reais em Windows.
 
 ## Fase 4 — Distribuição
 
-- [ ] Decidir como atender PCs sem WebView2 Runtime (instalador do Runtime ou pacote fixo).
-- [ ] Empacotar instalador, preservando o pacote portátil.
-- [ ] Assinar o executável e o pacote de atualização.
+- [ ] Resolver experiência para PC sem WebView2 Runtime.
+- [ ] Instalador opcional mantendo pacote portátil.
+- [ ] Assinatura de código.
 
-## Fase 5 — Celular
+## Fase 5 — Mobile
 
-- [ ] Reavaliar Android e iOS depois que a versão Windows estiver estável.
-- [ ] Definir motor e interface mobile separadamente.
-- [ ] Só então avaliar sincronização.
+- [ ] Reavaliar Android/iOS após estabilidade no Windows.
+- [ ] Só depois avaliar sincronização.

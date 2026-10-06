@@ -78,17 +78,11 @@ internal static class UpdateService
             await DownloadFileAsync(release.DownloadUrl, packagePath);
             var packageHash = await ValidatePackageAsync(packagePath, release.ExpectedSha256, release.ChecksumUrl);
 
-            try
-            {
-                // O auxiliar roda de fora da pasta de instalação para não
-                // sobrescrever o próprio arquivo em execução.
-                File.Copy(executable, InstalledHelperPath(installDirectory), overwrite: true);
-            }
+            var helperPath = UpdatePaths.HelperFile(updateDirectory);
+            try { File.Copy(executable, helperPath, overwrite: true); }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                throw new InvalidOperationException(
-                    "Não foi possível preparar o auxiliar da atualização. Verifique a permissão de escrita na pasta do Navegador.",
-                    exception);
+                throw new InvalidOperationException("Não foi possível preparar o auxiliar da atualização.", exception);
             }
 
             var handshake = UpdateHandshake.Create(
@@ -101,7 +95,7 @@ internal static class UpdateService
 
             var startInfo = new ProcessStartInfo
             {
-                FileName = InstalledHelperPath(installDirectory),
+                FileName = helperPath,
                 WorkingDirectory = updateDirectory,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -112,9 +106,9 @@ internal static class UpdateService
             startInfo.ArgumentList.Add(packagePath);
             startInfo.ArgumentList.Add(installDirectory);
 
-            if (Process.Start(startInfo) is null)
-                throw new InvalidOperationException("Não foi possível iniciar o instalador da atualização.");
-
+            var helperProcess = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Não foi possível iniciar o instalador da atualização.");
+            WaitForHelperReady(updateDirectory, handshake.Token, helperProcess);
             Application.Exit();
         }
         catch (Exception exception)
@@ -163,10 +157,13 @@ internal static class UpdateService
             if (handshake.ParentProcessId != parentProcessId)
                 throw new InvalidOperationException("O processo que pediu a atualização não confere com o combinado.");
 
-            UpdateApplyPolicy.EnsureInstallDirectoryMatches(installDirectory);
+            UpdateApplyPolicy.EnsureInstallDirectoryMatches(installDirectory, handshake.InstallDirectory);
             UpdateApplyPolicy.EnsurePackageInsideUpdateRoot(packagePath);
-            UpdateApplyPolicy.EnsureHelperOutsideInstallDirectory(installDirectory);
-
+            var helperExecutable = Environment.ProcessPath
+                ?? throw new InvalidOperationException("Não foi possível identificar o processo auxiliar.");
+            UpdateApplyPolicy.EnsureHelperLocation(helperExecutable, installDirectory);
+            EnsureParentProcessMatchesInstallDirectory(parentProcessId, installDirectory);
+            SignalHelperReady(updateDirectory, token);
             ApplyUpdate(parentProcessId, packagePath, installDirectory, updateDirectory, handshake);
         }
         catch (Exception exception)
@@ -188,10 +185,42 @@ internal static class UpdateService
         UpdatePaths.CleanupOldUpdates(TimeSpan.FromDays(1));
     }
 
-    private static string InstalledHelperPath(string installDirectory)
+    private static void EnsureParentProcessMatchesInstallDirectory(int parentProcessId, string installDirectory)
     {
-        // Nome próprio para o auxiliar ser distinguível de uma cópia manual do exe.
-        return Path.Combine(installDirectory, "Navegador.Atualizador.exe");
+        try
+        {
+            using var process = Process.GetProcessById(parentProcessId);
+            var executable = process.MainModule?.FileName
+                ?? throw new InvalidOperationException("Não foi possível identificar o executável da instância principal.");
+            UpdateApplyPolicy.EnsureExecutableBelongsToInstallDirectory(executable, installDirectory);
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            throw new InvalidOperationException("A atualização foi recusada: não foi possível confirmar a instância principal do Navegador.", exception);
+        }
+    }
+
+    private static void SignalHelperReady(string updateDirectory, string token) =>
+        File.WriteAllText(UpdatePaths.ReadyFile(updateDirectory), token);
+
+    private static void WaitForHelperReady(string updateDirectory, string token, Process helperProcess)
+    {
+        var readyFile = UpdatePaths.ReadyFile(updateDirectory);
+        var deadline = DateTime.UtcNow.AddSeconds(8);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (helperProcess.HasExited)
+                throw new InvalidOperationException("O auxiliar de atualização encerrou antes de ficar pronto.");
+            try
+            {
+                if (File.Exists(readyFile) && string.Equals(File.ReadAllText(readyFile).Trim(), token, StringComparison.Ordinal))
+                    return;
+            }
+            catch (IOException) { }
+            Thread.Sleep(80);
+        }
+        throw new TimeoutException("O auxiliar de atualização não respondeu a tempo.");
     }
 
     private static void WriteHandshake(string updateDirectory, UpdateHandshake handshake)
@@ -304,7 +333,7 @@ internal static class UpdateService
             throw new InvalidOperationException("O Navegador.exe do pacote não parece um executável válido do Windows.");
 
         var backupDirectory = UpdatePaths.BackupDirectory(updateDirectory);
-        var copied = new List<string>();
+        var createdFiles = new List<string>();
 
         try
         {
@@ -318,9 +347,10 @@ internal static class UpdateService
                 var destinationFile = Path.Combine(installDirectory, relativePath);
                 Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
 
+                var existed = File.Exists(destinationFile);
                 Backup(destinationFile, installDirectory, backupDirectory);
                 CopyWithRetry(sourceFile, destinationFile);
-                copied.Add(destinationFile);
+                if (!existed) createdFiles.Add(destinationFile);
             }
         }
         catch
@@ -328,6 +358,11 @@ internal static class UpdateService
             // Nada de deixar a instalação pela metade: qualquer falha de cópia
             // devolve os arquivos anteriores.
             Restore(installDirectory, backupDirectory);
+            foreach (var createdFile in createdFiles)
+            {
+                try { if (File.Exists(createdFile)) File.Delete(createdFile); }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
+            }
             throw;
         }
 
@@ -386,14 +421,10 @@ internal static class UpdateService
 
     private static void DeleteHandshake(string updateDirectory)
     {
-        try
+        foreach (var path in new[] { UpdatePaths.MarkerFile(updateDirectory), UpdatePaths.ReadyFile(updateDirectory) })
         {
-            var path = UpdatePaths.MarkerFile(updateDirectory);
-            if (File.Exists(path)) File.Delete(path);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // O combinado tem uso único por construção: o token muda a cada atualização.
+            try { if (File.Exists(path)) File.Delete(path); }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { }
         }
     }
 

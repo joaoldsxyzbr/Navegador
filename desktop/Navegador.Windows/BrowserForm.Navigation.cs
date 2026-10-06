@@ -19,20 +19,20 @@ internal sealed partial class BrowserForm
 
         core.NavigationStarting += (_, eventArgs) =>
         {
-            if (tab == _activeTab) _address.Text = eventArgs.Uri;
-
+            if (tab.IsInternalNewTab && !NewTabPage.IsInternalSource(eventArgs.Uri)) tab.IsInternalNewTab = false;
+            if (tab == _activeTab) _address.Text = tab.IsInternalNewTab ? string.Empty : eventArgs.Uri;
             UpdateNavigationButtons(tab);
         };
 
         core.SourceChanged += (_, _) =>
         {
-            if (tab == _activeTab) _address.Text = core.Source;
+            if (tab == _activeTab) _address.Text = tab.IsInternalNewTab ? string.Empty : core.Source;
         };
 
         core.DocumentTitleChanged += (_, _) =>
         {
             UpdateTabTitle(tab);
-            RecordVisit(tab);
+            UpdateHistoryTitle(tab);
         };
 
         core.NavigationCompleted += (_, _) =>
@@ -43,9 +43,19 @@ internal sealed partial class BrowserForm
 
             if (tab == _activeTab)
             {
-                _address.Text = core.Source;
+                _address.Text = tab.IsInternalNewTab ? string.Empty : core.Source;
                 RefreshBookmarkButton();
             }
+        };
+
+        core.WebMessageReceived += (_, eventArgs) =>
+        {
+            if (!tab.IsInternalNewTab) return;
+            if (!NewTabPage.TryGetNavigationTarget(eventArgs.WebMessageAsJson, out var input)) return;
+            var target = AddressResolver.Resolve(input);
+            if (string.IsNullOrWhiteSpace(target)) return;
+            tab.IsInternalNewTab = false;
+            core.Navigate(target);
         };
 
         core.NewWindowRequested += (_, eventArgs) =>
@@ -125,6 +135,16 @@ internal sealed partial class BrowserForm
         _history.Save();
     }
 
+    private void UpdateHistoryTitle(BrowserTab tab)
+    {
+        if (!IsAlive(tab)) return;
+        var core = tab.View.CoreWebView2;
+        var url = core?.Source;
+        var title = core?.DocumentTitle;
+        if (!AddressResolver.IsPersistable(url) || string.IsNullOrWhiteSpace(title)) return;
+        _history.UpdateTitle(url!, title);
+    }
+
     private void ToggleFavoriteForActiveTab()
     {
         var url = ActiveCore?.Source;
@@ -149,8 +169,9 @@ internal sealed partial class BrowserForm
         var url = ActiveCore?.Source;
         var saved = _favorites.Contains(url);
 
-        _bookmarkButton.Text = saved ? "★" : "☆";
+        _bookmarkButton.Icon = saved ? BrowserIcon.StarFilled : BrowserIcon.Star;
         _bookmarkButton.ForeColor = saved ? Theme.Starred : TextColor;
+        _bookmarkButton.Invalidate();
         _toolTip.SetToolTip(_bookmarkButton, saved ? "Remover dos favoritos" : "Adicionar aos favoritos");
     }
 

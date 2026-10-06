@@ -60,6 +60,15 @@ public sealed class HistoryStore
         return entry;
     }
 
+    public bool UpdateTitle(string url, string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return false;
+        var existing = _items.FirstOrDefault(item => string.Equals(item.Url, url, StringComparison.OrdinalIgnoreCase));
+        if (existing is null || string.Equals(existing.Title, title, StringComparison.Ordinal)) return false;
+        existing.Title = title;
+        return true;
+    }
+
     public IEnumerable<HistoryEntry> Search(string? query)
     {
         if (string.IsNullOrWhiteSpace(query)) return _items;

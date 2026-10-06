@@ -49,12 +49,14 @@ A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 - **configurações**: sessão, pasta de downloads, pergunta de destino e página inicial;
 - instância única, para duas cópias não escreverem a mesma sessão;
 - extensões Chromium locais descompactadas, com lista, ativação, desativação e remoção;
-- atualização integrada pelo menu, com consulta ao GitHub Releases, validação SHA-256, **rollback** automático e reinício.
+- atualização integrada por **botão visível na barra superior** e pelo menu, com consulta ao GitHub Releases, validação SHA-256, **rollback** automático e reinício;
+- nova guia própria, limpa e escura, com pesquisa central e atalhos dos favoritos;
+- `Ctrl+Shift+T` para reabrir a última guia fechada.
 
 ## Limites conhecidos
 
 - **Extensões**: o WebView2 não oferece a Chrome Web Store nem a janela de popup do ícone na barra. Extensões que dependem de popup (gerenciadores de senha, bloqueadores com painel) carregam, mas não podem ser operadas pela interface. A tela de extensões diz isso ao usuário.
-- **Abas**: não há favicon, agrupamento, fixação, arrastar para reordenar nem reabrir aba fechada (`Ctrl+Shift+T`).
+- **Abas**: ainda não há favicon, agrupamento, fixação nem arrastar para reordenar; reabrir aba fechada já funciona com `Ctrl+Shift+T`.
 - **Privacidade**: não há janela anônima nem limpeza de dados pela interface.
 - **Sincronização** entre máquinas não existe.
 - **Android/iOS**: fora do escopo desta etapa.
@@ -123,4 +125,4 @@ O script grava o `VERSION`, roda os testes, cria o commit e a etiqueta `v0.5.0`,
 - `v0.2.1`: reorganização da distribuição para single-file, deixando `Navegador.exe` evidente na raiz do pacote.
 - `v0.3.0`: primeira revisão visual grande do shell, com barra de título própria, abas e omnibox inspiradas no Chrome.
 - `v0.4.0`: atualização integrada de um clique usando GitHub Releases.
-- `v0.5.0`: separação do `Navegador.Core`, sessão, favoritos, histórico, downloads, configurações, instância única, atualizador com rollback e publicação por etiqueta.
+- `0.5.0 (em preparação)`: Core separado e testável, sessão, favoritos, histórico, downloads, configurações, nova guia própria, shell refinado, instância única e atualizador endurecido. A versão só vira release depois de CI verde e tag `v0.5.0`.

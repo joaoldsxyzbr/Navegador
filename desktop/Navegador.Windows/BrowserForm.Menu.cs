@@ -6,7 +6,9 @@ namespace Navegador.Windows;
 internal sealed partial class BrowserForm
 {
     private ToolStripMenuItem _downloadsMenuItem = null!;
+    private ToolStripMenuItem _reopenClosedTabMenuItem = null!;
     private ToolStripMenuItem _updateMenuItem = null!;
+    private bool _checkingForUpdates;
 
     private ContextMenuStrip BuildBrowserMenu()
     {
@@ -20,6 +22,7 @@ internal sealed partial class BrowserForm
         };
 
         var newTabItem = Item("Nova guia", "Ctrl+T", async () => await AddTabAsync());
+        _reopenClosedTabMenuItem = Item("Reabrir guia fechada", "Ctrl+Shift+T", ReopenClosedTab);
         var bookmarkItem = Item("Adicionar aos favoritos", "Ctrl+D", () =>
         {
             ToggleFavoriteForActiveTab();
@@ -43,6 +46,7 @@ internal sealed partial class BrowserForm
         menu.Items.AddRange(
         [
             newTabItem,
+            _reopenClosedTabMenuItem,
             bookmarkItem,
             favoritesItem,
             historyItem,
@@ -78,22 +82,22 @@ internal sealed partial class BrowserForm
             ? "Downloads\tCtrl+J"
             : $"Downloads ({_downloads.Items.Count(item => item.IsRunning)} ativos)\tCtrl+J";
 
-        _updateMenuItem.Enabled = true;
+        _reopenClosedTabMenuItem.Enabled = _closedTabs.Count > 0;
+        _updateMenuItem.Enabled = !_checkingForUpdates;
+        _updateButton.Enabled = !_checkingForUpdates;
     }
 
     private async Task CheckForUpdatesAsync()
     {
-        if (!_updateMenuItem.Enabled) return;
-
+        if (_checkingForUpdates) return;
+        _checkingForUpdates = true;
         _updateMenuItem.Enabled = false;
-
-        try
-        {
-            await UpdateService.CheckAndInstallAsync(this);
-        }
+        _updateButton.Enabled = false;
+        try { await UpdateService.CheckAndInstallAsync(this); }
         finally
         {
-            if (!IsDisposed) _updateMenuItem.Enabled = true;
+            _checkingForUpdates = false;
+            if (!IsDisposed) { _updateMenuItem.Enabled = true; _updateButton.Enabled = true; }
         }
     }
 
@@ -136,6 +140,10 @@ internal sealed partial class BrowserForm
 
             case Keys.Control | Keys.Shift | Keys.O:
                 ShowFavorites();
+                return true;
+
+            case Keys.Control | Keys.Shift | Keys.T:
+                ReopenClosedTab();
                 return true;
 
             case Keys.Alt | Keys.Left:

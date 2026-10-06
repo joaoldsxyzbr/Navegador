@@ -14,7 +14,11 @@ public static class AppPaths
     private const string LocalFolderName = "Navegador";
 
     private static readonly Lazy<string> ResolvedDataDirectory = new(ResolveDataDirectory);
-    private static readonly Lazy<bool> ResolvedPortable = new(() => IsUsable(BaseDirectory));
+    private static readonly Lazy<bool> ResolvedPortable = new(() =>
+        Path.GetFullPath(DataDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            .Equals(
+                Path.GetFullPath(Path.Combine(BaseDirectory, PortableFolderName)).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Pasta onde o executável está.</summary>
     public static string BaseDirectory => AppContext.BaseDirectory;

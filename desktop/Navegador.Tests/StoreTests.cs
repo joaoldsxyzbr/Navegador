@@ -135,6 +135,21 @@ public static class StoreTests
             }
         }),
 
+        new("histórico: atualizar título não conta nova visita", () =>
+        {
+            var directory = TestFiles.CreateDirectory();
+            try
+            {
+                var store = HistoryStore.Load(Path.Combine(directory, "history.json"));
+                store.Record("https://exemplo.com", "Título inicial");
+                Assert.True(store.UpdateTitle("https://exemplo.com", "Título final"));
+                Assert.Equal(1, store.Items[0].VisitCount);
+                Assert.Equal("Título final", store.Items[0].Title);
+                Assert.False(store.UpdateTitle("https://exemplo.com", "Título final"));
+            }
+            finally { TestFiles.Delete(directory); }
+        }),
+
         new("sessão: salva, recarrega e descarta URL inválida", () =>
         {
             var directory = TestFiles.CreateDirectory();

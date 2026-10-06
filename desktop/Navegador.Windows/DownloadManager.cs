@@ -46,16 +46,18 @@ internal sealed class DownloadItem
 
     public bool IsComplete => State == CoreWebView2DownloadState.Completed;
 
-    public long TotalBytes => Operation.TotalBytesToReceive;
+    public ulong? TotalBytes => Operation.TotalBytesToReceive;
 
-    public long ReceivedBytes => Operation.BytesReceived;
+    public ulong ReceivedBytes => Operation.BytesReceived <= 0
+        ? 0UL
+        : (ulong)Operation.BytesReceived;
 
-    public int Progress => TotalBytes > 0
-        ? (int)Math.Clamp(ReceivedBytes * 100 / TotalBytes, 0, 100)
+    public int Progress => TotalBytes is > 0
+        ? (int)Math.Clamp(Math.Round(ReceivedBytes * 100d / TotalBytes.Value), 0d, 100d)
         : 0;
 
-    public string SizeText => TotalBytes > 0
-        ? $"{Format(ReceivedBytes)} de {Format(TotalBytes)}"
+    public string SizeText => TotalBytes is > 0
+        ? $"{Format(ReceivedBytes)} de {Format(TotalBytes.Value)}"
         : $"{Format(ReceivedBytes)} recebidos";
 
     public string StatusText => State switch
@@ -70,21 +72,40 @@ internal sealed class DownloadItem
 
     private static string InterruptReasonText(CoreWebView2DownloadInterruptReason reason) => reason switch
     {
+        CoreWebView2DownloadInterruptReason.None => "sem motivo informado",
+        CoreWebView2DownloadInterruptReason.FileFailed => "falha ao gravar o arquivo",
+        CoreWebView2DownloadInterruptReason.FileAccessDenied => "sem permissão na pasta de destino",
+        CoreWebView2DownloadInterruptReason.FileNoSpace => "disco cheio",
+        CoreWebView2DownloadInterruptReason.FileNameTooLong => "nome do arquivo muito longo",
+        CoreWebView2DownloadInterruptReason.FileTooLarge => "arquivo grande demais para o sistema de arquivos",
+        CoreWebView2DownloadInterruptReason.FileMalicious => "arquivo bloqueado pela proteção do Windows",
+        CoreWebView2DownloadInterruptReason.FileTransientError => "arquivo temporariamente indisponível",
+        CoreWebView2DownloadInterruptReason.FileBlockedByPolicy => "arquivo bloqueado por política",
+        CoreWebView2DownloadInterruptReason.FileSecurityCheckFailed => "falha na verificação de segurança",
+        CoreWebView2DownloadInterruptReason.FileTooShort => "arquivo parcial reiniciado",
+        CoreWebView2DownloadInterruptReason.FileHashMismatch => "arquivo parcial inválido",
+        CoreWebView2DownloadInterruptReason.NetworkFailed => "falha de rede",
+        CoreWebView2DownloadInterruptReason.NetworkTimeout => "tempo de rede esgotado",
+        CoreWebView2DownloadInterruptReason.NetworkDisconnected => "conexão perdida",
+        CoreWebView2DownloadInterruptReason.NetworkServerDown => "servidor indisponível",
+        CoreWebView2DownloadInterruptReason.NetworkInvalidRequest => "requisição de rede inválida",
+        CoreWebView2DownloadInterruptReason.ServerFailed => "falha no servidor",
+        CoreWebView2DownloadInterruptReason.ServerNoRange => "servidor não permite retomar",
+        CoreWebView2DownloadInterruptReason.ServerBadContent => "conteúdo indisponível",
+        CoreWebView2DownloadInterruptReason.ServerUnauthorized => "download não autorizado",
+        CoreWebView2DownloadInterruptReason.ServerCertificateProblem => "problema no certificado do servidor",
+        CoreWebView2DownloadInterruptReason.ServerForbidden => "download proibido",
+        CoreWebView2DownloadInterruptReason.ServerUnexpectedResponse => "resposta inesperada do servidor",
+        CoreWebView2DownloadInterruptReason.ServerContentLengthMismatch => "tamanho recebido diferente do informado",
+        CoreWebView2DownloadInterruptReason.ServerCrossOriginRedirect => "redirecionamento inesperado",
         CoreWebView2DownloadInterruptReason.UserCanceled => "cancelado",
         CoreWebView2DownloadInterruptReason.UserShutdown => "cancelado ao fechar",
-        CoreWebView2DownloadInterruptReason.DownloadProcessFailed => "falha no processo de download",
-        CoreWebView2DownloadInterruptReason.DownloadFileBusy => "arquivo em uso",
-        CoreWebView2DownloadInterruptReason.DownloadFileAccessDenied => "sem permissão na pasta de destino",
-        CoreWebView2DownloadInterruptReason.DownloadFileFailed => "falha ao gravar o arquivo",
-        CoreWebView2DownloadInterruptReason.ServerFailed => "o servidor recusou o download",
-        CoreWebView2DownloadInterruptReason.ConnectionAborted => "conexão interrompida",
-        CoreWebView2DownloadInterruptReason.ConnectionTimeout => "tempo esgotado",
-        CoreWebView2DownloadInterruptReason.NoNetwork => "sem rede",
-        CoreWebView2DownloadInterruptReason.DiskFull => "disco cheio",
+        CoreWebView2DownloadInterruptReason.UserPaused => "pausado",
+        CoreWebView2DownloadInterruptReason.DownloadProcessCrashed => "processo de download encerrou",
         _ => reason.ToString()
     };
 
-    private static string Format(long bytes)
+    private static string Format(ulong bytes)
     {
         if (bytes <= 0) return "0 B";
 
@@ -172,7 +193,7 @@ internal sealed class DownloadManager : IDisposable
             try
             {
                 Directory.CreateDirectory(folder);
-                eventArgs.ResultFilePath = Path.Combine(folder, fileName);
+                eventArgs.ResultFilePath = UniqueFilePath(folder, fileName);
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
@@ -274,4 +295,21 @@ internal sealed class DownloadManager : IDisposable
         !string.IsNullOrWhiteSpace(name) &&
         name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
         name is not "." and not "..";
+
+    private static string UniqueFilePath(string folder, string fileName)
+    {
+        var candidate = Path.Combine(folder, fileName);
+        if (!File.Exists(candidate)) return candidate;
+
+        var stem = Path.GetFileNameWithoutExtension(fileName);
+        var extension = Path.GetExtension(fileName);
+
+        for (var index = 1; index < 10_000; index++)
+        {
+            candidate = Path.Combine(folder, $"{stem} ({index}){extension}");
+            if (!File.Exists(candidate)) return candidate;
+        }
+
+        return Path.Combine(folder, $"{stem}-{Guid.NewGuid():N}{extension}");
+    }
 }
