@@ -37,6 +37,8 @@ O visual mantém a organização familiar do Chrome: faixa de abas, barra de end
 
 A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 
+Decisões relevantes de arquitetura, UX, segurança e manutenção seguem um processo de comparação com projetos open source maduros, documentado em [Referências open source](docs/REFERENCIAS-OPEN-SOURCE.md). A ideia é aprender com soluções já testadas sem copiar funcionalidades ou complexidade que não façam sentido para o Rumo.
+
 ## O que o protótipo já faz
 
 - abas com criação, troca, fechamento, favicons, fixação pelo menu de contexto e reordenação por arraste;
@@ -124,6 +126,7 @@ Como alternativa operacional pelo próprio GitHub, uma branch `release/vX.Y.Z` a
 - [Arquitetura](docs/ARQUITETURA.md)
 - [Requisitos](docs/REQUISITOS.md)
 - [Plano](docs/PLANO.md)
+- [Referências open source](docs/REFERENCIAS-OPEN-SOURCE.md)
 
 ## Histórico
 
