@@ -321,7 +321,7 @@ internal abstract class BrowserListForm : Form
         var used = List.Columns.Cast<ColumnHeader>()
             .Take(List.Columns.Count - 1)
             .Sum(column => column.Width);
-        var width = Math.Max(150, List.ClientSize.Width - used - 8);
+        var width = Math.Max(1, List.ClientSize.Width - used - 8);
         if (List.Columns[^1].Width != width) List.Columns[^1].Width = width;
     }
 }
