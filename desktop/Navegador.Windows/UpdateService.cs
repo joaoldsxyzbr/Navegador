@@ -81,8 +81,8 @@ internal static class UpdateService
             startInfo.ArgumentList.Add(packagePath);
             startInfo.ArgumentList.Add(installDirectory);
 
-            Process.Start(startInfo)
-                ?? throw new InvalidOperationException("Não foi possível iniciar o instalador da atualização.");
+            if (Process.Start(startInfo) is null)
+                throw new InvalidOperationException("Não foi possível iniciar o instalador da atualização.");
 
             Application.Exit();
         }
