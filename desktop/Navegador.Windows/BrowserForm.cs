@@ -82,6 +82,7 @@ internal sealed class BrowserForm : Form
     private readonly ChromeIconButton _backButton;
     private readonly ChromeIconButton _forwardButton;
     private readonly ChromeIconButton _reloadButton;
+    private readonly ChromeIconButton _updateButton;
     private readonly ChromeIconButton _extensionsButton;
     private readonly ChromeIconButton _menuButton;
     private readonly Button _maximizeButton;
@@ -141,12 +142,14 @@ internal sealed class BrowserForm : Form
         _backButton = CreateIconButton("←", "Voltar", ToolbarColor);
         _forwardButton = CreateIconButton("→", "Avançar", ToolbarColor);
         _reloadButton = CreateIconButton("↻", "Recarregar", ToolbarColor, new Font("Segoe UI Symbol", 13F));
+        _updateButton = CreateIconButton("⇩", "Atualizar Navegador", ToolbarColor, new Font("Segoe UI Symbol", 12F));
         _extensionsButton = CreateIconButton("🧩", "Extensões", ToolbarColor, new Font("Segoe UI Emoji", 10.5F));
         _menuButton = CreateIconButton("⋮", "Menu", ToolbarColor, new Font("Segoe UI", 15F));
 
         _backButton.Click += (_, _) => NavigateBack();
         _forwardButton.Click += (_, _) => NavigateForward();
         _reloadButton.Click += (_, _) => _activeTab?.View.CoreWebView2?.Reload();
+        _updateButton.Click += async (_, _) => await CheckForUpdatesAsync();
         _extensionsButton.Click += (_, _) => OpenExtensions();
 
         _browserMenu = BuildBrowserMenu();
@@ -173,7 +176,7 @@ internal sealed class BrowserForm : Form
         var toolbar = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            ColumnCount = 6,
+            ColumnCount = 7,
             RowCount = 1,
             BackColor = ToolbarColor,
             Margin = Padding.Empty,
@@ -185,13 +188,15 @@ internal sealed class BrowserForm : Form
         toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
         toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
+        toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 42));
         toolbar.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         toolbar.Controls.Add(_backButton, 0, 0);
         toolbar.Controls.Add(_forwardButton, 1, 0);
         toolbar.Controls.Add(_reloadButton, 2, 0);
         toolbar.Controls.Add(_addressShell, 3, 0);
-        toolbar.Controls.Add(_extensionsButton, 4, 0);
-        toolbar.Controls.Add(_menuButton, 5, 0);
+        toolbar.Controls.Add(_updateButton, 4, 0);
+        toolbar.Controls.Add(_extensionsButton, 5, 0);
+        toolbar.Controls.Add(_menuButton, 6, 0);
 
         var root = new TableLayoutPanel
         {
@@ -283,6 +288,9 @@ internal sealed class BrowserForm : Form
         var newTabItem = new ToolStripMenuItem("Nova guia");
         newTabItem.Click += async (_, _) => await AddTabAsync();
 
+        var updateItem = new ToolStripMenuItem("Atualizar Navegador");
+        updateItem.Click += async (_, _) => await CheckForUpdatesAsync();
+
         var extensionsItem = new ToolStripMenuItem("Extensões");
         extensionsItem.Click += (_, _) => OpenExtensions();
 
@@ -292,13 +300,14 @@ internal sealed class BrowserForm : Form
             if (_activeTab is not null) CloseTab(_activeTab);
         };
 
-        foreach (var item in new[] { newTabItem, extensionsItem, closeTabItem })
+        foreach (var item in new[] { newTabItem, updateItem, extensionsItem, closeTabItem })
         {
             item.BackColor = ActiveTabColor;
             item.ForeColor = TextColor;
         }
 
         menu.Items.Add(newTabItem);
+        menu.Items.Add(updateItem);
         menu.Items.Add(extensionsItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(closeTabItem);
@@ -366,6 +375,28 @@ internal sealed class BrowserForm : Form
         var path = Path.Combine(AppContext.BaseDirectory, "Data", "WebView2");
         Directory.CreateDirectory(path);
         return path;
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        if (!_updateButton.Enabled) return;
+
+        var originalText = _updateButton.Text;
+        _updateButton.Enabled = false;
+        _updateButton.Text = "…";
+
+        try
+        {
+            await UpdateService.CheckAndInstallAsync(this);
+        }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                _updateButton.Text = originalText;
+                _updateButton.Enabled = true;
+            }
+        }
     }
 
     private void OpenExtensions()

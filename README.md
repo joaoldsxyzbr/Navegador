@@ -30,7 +30,8 @@ A linha Android fica para uma fase posterior, depois de validarmos o Windows.
 - barra de endereço com busca;
 - tema escuro;
 - perfil persistente em `Data/WebView2`;
-- suporte experimental a extensões Chromium locais descompactadas, com lista, ativação, desativação e remoção.
+- suporte experimental a extensões Chromium locais descompactadas, com lista, ativação, desativação e remoção;
+- atualização integrada pelo botão `⇩`, com consulta ao GitHub Releases, validação SHA-256, substituição do executável e reinício automático.
 
 A instalação pela Chrome Web Store e a interface de popup/ícones das extensões ainda precisam de trabalho específico. O WebView2 não fornece esses pontos de interface de navegador automaticamente.
 
@@ -64,3 +65,4 @@ dotnet run --project desktop/Navegador.Windows/Navegador.Windows.csproj
 - `v0.2.0`: primeira release WebView2, funcional mas com empacotamento self-contained espalhado em muitos arquivos.
 - `v0.2.1`: reorganização da distribuição para single-file, deixando `Navegador.exe` evidente na raiz do pacote.
 - `v0.3.0`: primeira revisão visual grande do shell, com barra de título própria, abas e omnibox inspiradas no Chrome.
+- `v0.4.0`: adiciona atualização integrada de um clique usando GitHub Releases.
