@@ -122,6 +122,7 @@ Como alternativa operacional pelo próprio GitHub, uma branch `release/vX.Y.Z` a
 ## Documentação
 
 - [Arquitetura](docs/ARQUITETURA.md)
+- [Avaliação do motor para extensões](docs/DECISOES/001-motor-para-extensoes.md)
 - [Requisitos](docs/REQUISITOS.md)
 - [Plano](docs/PLANO.md)
 
