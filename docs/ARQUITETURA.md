@@ -43,6 +43,12 @@ O Navegador define a pasta de destino, evita sobrescrever silenciosamente arquiv
 
 Extensões Chromium locais descompactadas podem ser instaladas, ativadas e removidas. Chrome Web Store, ícones e popups não são presumidos porque o WebView2 não fornece a interface completa de um navegador Chromium.
 
+## Processo de engenharia
+
+Mudanças significativas de arquitetura, UX, segurança, extensões, atualização e manutenção devem partir do problema do Rumo e comparar soluções já testadas em projetos open source relevantes. O processo e as referências canônicas ficam em [`REFERENCIAS-OPEN-SOURCE.md`](REFERENCIAS-OPEN-SOURCE.md).
+
+A comparação não altera a decisão de base atual: o Rumo continua em C# / WinForms / .NET 10 + WebView2. Referências externas servem para extrair princípios e padrões; limitações do WebView2 devem ser tratadas explicitamente, sem simular suporte inexistente.
+
 ## Publicação
 
 VERSION é a fonte única de versão. Releases só são disparadas por tag vX.Y.Z que combine com esse arquivo. O workflow roda testes, publica single-file x64, valida o pacote e cria a release.
