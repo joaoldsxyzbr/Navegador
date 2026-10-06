@@ -127,6 +127,50 @@ jobs:
           Compress-Archive -Path publish/Navegador/* -DestinationPath $zip -CompressionLevel Optimal
           $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
           "$hash  Rumo-v$version-windows-x64.zip" | Set-Content -Encoding ascii "$zip.sha256"
+
+          $portableRoot = "dist/portable"
+          $runtimeRoot = Join-Path $portableRoot "Rumo"
+          if (Test-Path $portableRoot) { Remove-Item $portableRoot -Recurse -Force }
+          New-Item -ItemType Directory -Force $runtimeRoot | Out-Null
+          Copy-Item -Path "publish/Navegador/*" -Destination $runtimeRoot -Recurse -Force
+          Remove-Item (Join-Path $runtimeRoot "LEIA-ME.txt") -Force
+
+          @"
+          RUMO v$version — ZIP PORTÁTIL
+
+          PARA ABRIR:
+          1. Extraia esta pasta inteira.
+          2. Abra Abrir Rumo.cmd, ou Rumo\Navegador.exe.
+
+          Se o Microsoft Visual C++ 2022 x64 não estiver instalado:
+          - execute Rumo\VC_redist.x64.exe como administrador antes de abrir o navegador.
+
+          Mantenha a pasta Rumo completa. Ela contém Chromium, CefSharp e os arquivos do navegador.
+          "@ | Set-Content -Encoding UTF8 (Join-Path $portableRoot "LEIA-ME.txt")
+
+          @'
+          @echo off
+          start "" "%~dp0Rumo\Navegador.exe" %*
+          '@ | Set-Content -Encoding ASCII (Join-Path $portableRoot "Abrir Rumo.cmd")
+
+          $portableZip = "dist/Rumo-v$version-windows-x64-portable.zip"
+          Compress-Archive -Path "$portableRoot/*" -DestinationPath $portableZip -CompressionLevel Optimal
+          $portableHash = (Get-FileHash $portableZip -Algorithm SHA256).Hash.ToLower()
+          "$portableHash  Rumo-v$version-windows-x64-portable.zip" | Set-Content -Encoding ascii "$portableZip.sha256"
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [IO.Compression.ZipFile]::OpenRead($portableZip)
+          try {
+            $archiveEntries = @($archive.Entries | ForEach-Object { $_.FullName })
+            $requiredEntries = @("LEIA-ME.txt", "Abrir Rumo.cmd", "Rumo/Navegador.exe", "Rumo/VC_redist.x64.exe", "Rumo/libcef.dll")
+            foreach ($entry in $requiredEntries) {
+              if ($entry -notin $archiveEntries) { throw "Arquivo ausente no ZIP portátil: $entry" }
+            }
+            $unexpectedRootFiles = @($archiveEntries | Where-Object { $_ -notmatch "/" -and $_ -notin @("LEIA-ME.txt", "Abrir Rumo.cmd") })
+            if ($unexpectedRootFiles.Count -gt 0) { throw "O ZIP portátil deixou arquivos do app soltos na raiz: $($unexpectedRootFiles -join ', ')." }
+          } finally {
+            $archive.Dispose()
+          }
       - name: Compilar instalador opcional
         shell: pwsh
         run: |
@@ -154,10 +198,11 @@ jobs:
           - janela privada com contexto Chromium isolado e limpeza de dados;
           - CefSharp e Chromium incluídos no pacote, sem exigir Edge WebView2 Runtime;
           - o setup instala o runtime Microsoft Visual C++ 2022 x64 se necessário;
+          - ZIP portátil com pasta Rumo e iniciador Abrir Rumo.cmd;
           - licenças dos componentes de terceiros dentro do pacote;
-          - ZIP portátil e instalador opcional sem exigir administrador.
+          - instalador por usuário; a instalação do runtime Visual C++ solicita elevação somente quando necessário.
 
-          Para usar o ZIP, extraia a pasta inteira. Em uma máquina sem o runtime Visual C++ 2022 x64, execute VC_redist.x64.exe como administrador antes de abrir Navegador.exe. O setup instala o runtime se necessário, cria atalhos e mantém o ZIP portátil disponível.
+          Para usar o pacote portátil, baixe o arquivo terminado em -portable.zip, extraia e abra Abrir Rumo.cmd. O arquivo sem -portable é usado pelo atualizador interno. O setup instala o runtime se necessário, cria atalhos e mantém o ZIP portátil disponível.
           "@ | Set-Content -Encoding UTF8 release-notes.md
       - name: Criar release
         shell: pwsh
@@ -169,6 +214,8 @@ jobs:
           $files = @(
             "dist/Rumo-v$version-windows-x64.zip",
             "dist/Rumo-v$version-windows-x64.zip.sha256",
+            "dist/Rumo-v$version-windows-x64-portable.zip",
+            "dist/Rumo-v$version-windows-x64-portable.zip.sha256",
             "dist/Rumo-v$version-windows-x64-setup.exe",
             "dist/Rumo-v$version-windows-x64-setup.exe.sha256"
           )

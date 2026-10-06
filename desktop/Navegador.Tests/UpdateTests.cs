@@ -145,6 +145,29 @@ public static class UpdateTests
             Assert.NotNull(release.ChecksumUrl);
         }),
 
+        new("release: ignora ZIP portátil ao escolher pacote de atualização", () =>
+        {
+            const string json = """
+            {
+              "tag_name": "v0.6.2",
+              "assets": [
+                {
+                  "name": "Rumo-v0.6.2-windows-x64-portable.zip",
+                  "browser_download_url": "https://github.com/a/b/Rumo-v0.6.2-windows-x64-portable.zip"
+                },
+                {
+                  "name": "Rumo-v0.6.2-windows-x64.zip",
+                  "browser_download_url": "https://github.com/a/b/Rumo-v0.6.2-windows-x64.zip"
+                }
+              ]
+            }
+            """;
+
+            var release = ReleaseParser.Parse(json);
+            Assert.Equal("Rumo-v0.6.2-windows-x64.zip", release.PackageName);
+            Assert.True(release.DownloadUrl.EndsWith("Rumo-v0.6.2-windows-x64.zip", StringComparison.Ordinal));
+        }),
+
         new("checksum: primeiro campo do arquivo é lido", () =>
         {
             var hash = new string('a', 64);

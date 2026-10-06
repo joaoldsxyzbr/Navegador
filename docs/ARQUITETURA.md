@@ -26,6 +26,8 @@ O diretório de dados é único: Data\ ao lado do executável quando a pasta é 
 
 O CefSharp 152 requer o Microsoft Visual C++ 2022 Redistributable x64. A release inclui o instalador oficial da Microsoft: o setup do Rumo o executa se o runtime não estiver instalado, enquanto a distribuição ZIP deixa o instalador ao lado do executável para uso em uma máquina limpa. O aplicativo não depende do Edge WebView2 Runtime.
 
+O pacote `Rumo-vX.Y.Z-windows-x64.zip` mantém os arquivos na raiz porque o atualizador interno extrai esse layout. O ZIP portátil manual usa `Rumo-vX.Y.Z-windows-x64-portable.zip`: a raiz contém apenas instruções, um iniciador e a pasta `Rumo` com os arquivos do app.
+
 ## Persistência
 
 JSON é salvo por arquivo temporário + substituição. Arquivo ausente/corrompido volta para um estado seguro. A sessão remove URLs não persistíveis e preserva a aba ativa.
