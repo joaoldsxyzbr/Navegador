@@ -3,29 +3,30 @@ using Navegador.Windows.Ui;
 
 namespace Navegador.Windows;
 
-/// <summary>
-/// Gerenciamento das extensões do perfil.
-///
-/// O WebView2 aceita extensões descompactadas e permite ativar, desativar e
-/// remover, mas não oferece a loja nem a janela de popup do ícone na barra.
-/// Enquanto isso não for implementado, esta tela deixa o limite explícito em
-/// vez de sugerir compatibilidade total com o Chrome.
-/// </summary>
+/// <summary>Gerencia extensões locais do perfil ativo.</summary>
 internal sealed class ExtensionsForm : Form
 {
     private readonly CoreWebView2Profile _profile;
-    private readonly ListBox _extensions = new()
+    private readonly FlowLayoutPanel _extensionList = new()
     {
         Dock = DockStyle.Fill,
-        BackColor = Theme.Address,
-        ForeColor = Theme.Text,
-        BorderStyle = BorderStyle.FixedSingle,
-        IntegralHeight = false,
-        Font = Theme.Ui(10F)
+        AutoScroll = true,
+        WrapContents = false,
+        FlowDirection = FlowDirection.TopDown,
+        BackColor = Theme.TitleBar,
+        Padding = new Padding(14, 8, 14, 8),
+        TabStop = true,
+        AccessibleName = "Extensões instaladas"
     };
-    private readonly Button _toggleButton;
-    private readonly Button _removeButton;
-    private readonly Label _status = new() { Dock = DockStyle.Bottom, Height = 24, ForeColor = Theme.MutedText };
+    private readonly Label _status = new()
+    {
+        Dock = DockStyle.Fill,
+        ForeColor = Theme.Text,
+        TextAlign = ContentAlignment.MiddleRight,
+        AutoEllipsis = true,
+        Padding = new Padding(8, 0, 8, 0),
+        AccessibleName = "Estado da lista de extensões"
+    };
 
     public ExtensionsForm(CoreWebView2Profile profile)
     {
@@ -33,113 +34,307 @@ internal sealed class ExtensionsForm : Form
 
         Text = $"Extensões do {Branding.Name}";
         StartPosition = FormStartPosition.CenterParent;
-        MinimumSize = new Size(620, 400);
-        Size = new Size(720, 480);
+        FormBorderStyle = FormBorderStyle.Sizable;
+        MinimumSize = new Size(780, 520);
+        ClientSize = new Size(920, 620);
         BackColor = Theme.TitleBar;
         ForeColor = Theme.Text;
         Font = Theme.Ui(10F);
+        AutoScaleMode = AutoScaleMode.Font;
 
-        var installButton = MakeButton("Instalar pasta descompactada", 200);
-        installButton.Click += async (_, _) => await InstallAsync();
-
-        _toggleButton = MakeButton("Ativar", 110);
-        _toggleButton.Enabled = false;
-        _toggleButton.Click += async (_, _) => await ToggleAsync();
-
-        _removeButton = MakeButton("Remover", 96);
-        _removeButton.Enabled = false;
-        _removeButton.Click += async (_, _) => await RemoveAsync();
-
-        var reloadButton = MakeButton("Atualizar lista", 120);
-        reloadButton.Click += async (_, _) => await RefreshExtensionsAsync();
-
-        _extensions.SelectedIndexChanged += (_, _) =>
+        var root = new TableLayoutPanel
         {
-            var selected = _extensions.SelectedItem is ExtensionEntry;
-            _toggleButton.Enabled = selected;
-            _removeButton.Enabled = selected;
-            UpdateToggleCaption();
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 4,
+            BackColor = Theme.TitleBar,
+            Padding = Padding.Empty,
+            Margin = Padding.Empty
         };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 78));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 82));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
 
-        var explanation = new Label
-        {
-            Dock = DockStyle.Top,
-            Height = 58,
-            ForeColor = Theme.MutedText,
-            Text =
-                "Extensões Chromium podem ser carregadas de uma pasta local com manifest.json.\n" +
-                "A Chrome Web Store e as janelas de popup/ícones de extensão não são suportadas pelo WebView2.",
-            Padding = new Padding(12, 8, 12, 0)
-        };
+        root.Controls.Add(BuildHeader(), 0, 0);
+        root.Controls.Add(BuildNotice(), 0, 1);
+        root.Controls.Add(_extensionList, 0, 2);
+        root.Controls.Add(BuildFooter(), 0, 3);
+        Controls.Add(root);
 
-        var buttons = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Bottom,
-            Height = 50,
-            FlowDirection = FlowDirection.LeftToRight,
-            Padding = new Padding(8, 8, 8, 8),
-            BackColor = Theme.Toolbar,
-            WrapContents = false
-        };
-        buttons.Controls.Add(installButton);
-        buttons.Controls.Add(_toggleButton);
-        buttons.Controls.Add(_removeButton);
-        buttons.Controls.Add(reloadButton);
-
-        Controls.Add(_extensions);
-        Controls.Add(buttons);
-        Controls.Add(_status);
-        Controls.Add(explanation);
-
+        _extensionList.SizeChanged += (_, _) => AdjustCardWidths();
         Shown += async (_, _) => await RefreshExtensionsAsync();
     }
 
-    private Button MakeButton(string text, int width)
+    private Control BuildHeader()
+    {
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2,
+            Padding = new Padding(22, 11, 22, 4),
+            BackColor = Theme.TitleBar
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        layout.Controls.Add(new Label
+        {
+            Text = "Extensões",
+            Dock = DockStyle.Fill,
+            ForeColor = Theme.Text,
+            Font = Theme.Ui(16F),
+            TextAlign = ContentAlignment.MiddleLeft
+        }, 0, 0);
+        layout.Controls.Add(new Label
+        {
+            Text = "Instale e gerencie extensões neste perfil do Rumo.",
+            Dock = DockStyle.Fill,
+            ForeColor = Theme.Text,
+            TextAlign = ContentAlignment.MiddleLeft
+        }, 0, 1);
+
+        return layout;
+    }
+
+    private Control BuildNotice()
+    {
+        var notice = new RoundedPanel(12)
+        {
+            Dock = DockStyle.Fill,
+            Margin = new Padding(18, 2, 18, 8),
+            Padding = new Padding(14, 8, 14, 8),
+            BackColor = Theme.Hover,
+            BorderColor = Theme.AddressBorder,
+            BorderWidth = 1F,
+            AccessibleName = "Limites de compatibilidade das extensões"
+        };
+        notice.Controls.Add(new Label
+        {
+            Dock = DockStyle.Fill,
+            ForeColor = Theme.Text,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text =
+                "O Rumo instala extensões locais já descompactadas, a partir de uma pasta com manifest.json. " +
+                "A Chrome Web Store, os ícones de extensão na barra e seus pop-ups não estão disponíveis no WebView2."
+        });
+
+        return notice;
+    }
+
+    private Control BuildFooter()
+    {
+        var footer = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            Padding = new Padding(14, 8, 14, 8),
+            BackColor = Theme.Toolbar
+        };
+        footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 250));
+        footer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        var actions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            BackColor = Theme.Toolbar,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
+        };
+        var install = MakeButton("Instalar pasta local…", 188, primary: true);
+        install.AccessibleName = "Instalar extensão de uma pasta local";
+        install.Click += async (_, _) => await InstallAsync();
+
+        var refresh = MakeButton("Atualizar lista", 132);
+        refresh.Click += async (_, _) => await RefreshExtensionsAsync();
+
+        actions.Controls.Add(install);
+        actions.Controls.Add(refresh);
+        footer.Controls.Add(actions, 0, 0);
+        footer.Controls.Add(_status, 1, 0);
+
+        return footer;
+    }
+
+    private Button MakeButton(string text, int width, bool primary = false)
     {
         var button = new Button
         {
             Text = text,
             Width = width,
-            Height = 30,
+            Height = 38,
             FlatStyle = FlatStyle.Flat,
-            BackColor = Theme.Address,
+            BackColor = primary ? Theme.AddressFocus : Theme.Address,
             ForeColor = Theme.Text,
             Font = Theme.Ui(9.5F),
-            Margin = new Padding(0, 0, 6, 0),
-            UseVisualStyleBackColor = false
+            Margin = new Padding(0, 1, 8, 0),
+            UseVisualStyleBackColor = false,
+            Cursor = Cursors.Hand,
+            TabStop = true
         };
+        button.FlatAppearance.BorderColor = Theme.AddressBorder;
+        button.FlatAppearance.BorderSize = 1;
+        button.FlatAppearance.MouseOverBackColor = Theme.Hover;
+        button.FlatAppearance.MouseDownBackColor = Theme.Press;
 
-        button.FlatAppearance.BorderColor = Theme.Hover;
         return button;
     }
 
     private async Task RefreshExtensionsAsync()
     {
+        _status.Text = "Carregando extensões…";
+
         try
         {
             var installed = await _profile.GetBrowserExtensionsAsync();
 
-            _extensions.BeginUpdate();
-            _extensions.Items.Clear();
+            _extensionList.SuspendLayout();
+            _extensionList.Controls.Clear();
 
-            foreach (var extension in installed)
+            if (installed.Count == 0)
             {
-                _extensions.Items.Add(new ExtensionEntry(extension));
+                AddEmptyState();
+            }
+            else
+            {
+                foreach (var extension in installed)
+                    _extensionList.Controls.Add(CreateExtensionCard(extension));
             }
 
-            _extensions.EndUpdate();
-
+            _extensionList.ResumeLayout(performLayout: true);
             _status.Text = installed.Count switch
             {
-                0 => "Nenhuma extensão instalada neste perfil.",
-                1 => "1 extensão instalada.",
-                _ => $"{installed.Count} extensões instaladas."
+                0 => "Nenhuma extensão instalada",
+                1 => "1 extensão instalada",
+                _ => $"{installed.Count} extensões instaladas"
             };
         }
         catch (Exception exception)
         {
+            _status.Text = "Não foi possível carregar a lista";
             ShowError("Não foi possível listar as extensões.", exception);
         }
+    }
+
+    private void AddEmptyState()
+    {
+        var empty = new RoundedPanel(12)
+        {
+            Width = CardWidth(),
+            Height = 170,
+            Margin = new Padding(0, 0, 0, 10),
+            Padding = new Padding(24),
+            BackColor = Theme.Toolbar,
+            BorderColor = Theme.AddressBorder,
+            BorderWidth = 1F,
+            AccessibleName = "Nenhuma extensão instalada"
+        };
+        _extensionList.Controls.Add(empty);
+        empty.Controls.Add(new Label
+        {
+            Dock = DockStyle.Fill,
+            ForeColor = Theme.Text,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Text =
+                "Nenhuma extensão instalada neste perfil.\n\n" +
+                "Use “Instalar pasta local…” para escolher uma extensão descompactada " +
+                "que contenha o arquivo manifest.json."
+        });
+    }
+
+    private Control CreateExtensionCard(CoreWebView2BrowserExtension extension)
+    {
+        var card = new RoundedPanel(12)
+        {
+            Width = CardWidth(),
+            Height = 96,
+            Margin = new Padding(0, 0, 0, 10),
+            Padding = new Padding(12, 8, 12, 8),
+            BackColor = Theme.Toolbar,
+            BorderColor = Theme.AddressBorder,
+            BorderWidth = 1F,
+            AccessibleName = $"Extensão {extension.Name}"
+        };
+
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 2,
+            BackColor = Theme.Toolbar,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 124));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 118));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+
+        var name = new Label
+        {
+            Text = extension.Name,
+            Dock = DockStyle.Fill,
+            ForeColor = Theme.Text,
+            Font = new Font(Theme.Ui(10F), FontStyle.Bold),
+            TextAlign = ContentAlignment.MiddleLeft,
+            AutoEllipsis = true,
+            AccessibleName = $"Nome da extensão: {extension.Name}"
+        };
+        var id = new Label
+        {
+            Text = $"ID: {extension.Id}",
+            Dock = DockStyle.Fill,
+            ForeColor = Theme.Text,
+            Font = Theme.Ui(8.5F),
+            TextAlign = ContentAlignment.MiddleLeft,
+            AutoEllipsis = true,
+            AccessibleDescription = extension.Id
+        };
+        var status = new Label
+        {
+            Text = extension.IsEnabled ? "Ativada" : "Desativada",
+            Dock = DockStyle.Fill,
+            ForeColor = extension.IsEnabled ? Theme.Accent : Theme.Text,
+            Font = Theme.Ui(9.5F),
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+
+        var toggle = MakeButton(extension.IsEnabled ? "Desativar" : "Ativar", 106);
+        toggle.Height = 32;
+        toggle.AccessibleName = $"{(extension.IsEnabled ? "Desativar" : "Ativar")} {extension.Name}";
+        toggle.Click += async (_, _) => await ToggleAsync(extension);
+
+        var remove = MakeButton("Remover", 106);
+        remove.Height = 32;
+        remove.AccessibleName = $"Remover {extension.Name}";
+        remove.Click += async (_, _) => await RemoveAsync(extension);
+
+        layout.Controls.Add(name, 0, 0);
+        layout.Controls.Add(id, 0, 1);
+        layout.Controls.Add(status, 1, 0);
+        layout.SetRowSpan(status, 2);
+        layout.Controls.Add(toggle, 2, 0);
+        layout.Controls.Add(remove, 2, 1);
+        card.Controls.Add(layout);
+
+        return card;
+    }
+
+    private int CardWidth() => Math.Max(500, _extensionList.ClientSize.Width - 34);
+
+    private void AdjustCardWidths()
+    {
+        var width = CardWidth();
+        foreach (Control card in _extensionList.Controls)
+            card.Width = width;
     }
 
     private async Task InstallAsync()
@@ -155,27 +350,23 @@ internal sealed class ExtensionsForm : Form
         try
         {
             var extension = await _profile.AddBrowserExtensionAsync(picker.SelectedPath);
-
+            await RefreshExtensionsAsync();
             MessageBox.Show(this, $"Extensão instalada: {extension.Name}", "Extensões",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            await RefreshExtensionsAsync();
         }
         catch (Exception exception)
         {
             ShowError(
-                "A pasta não contém uma extensão compatível ou o WebView2 não conseguiu carregá-la.",
+                "Não foi possível instalar. Confirme se a pasta contém manifest.json e se a extensão é compatível.",
                 exception);
         }
     }
 
-    private async Task ToggleAsync()
+    private async Task ToggleAsync(CoreWebView2BrowserExtension extension)
     {
-        if (_extensions.SelectedItem is not ExtensionEntry entry) return;
-
         try
         {
-            await entry.Extension.EnableAsync(!entry.Extension.IsEnabled);
+            await extension.EnableAsync(!extension.IsEnabled);
             await RefreshExtensionsAsync();
         }
         catch (Exception exception)
@@ -184,14 +375,12 @@ internal sealed class ExtensionsForm : Form
         }
     }
 
-    private async Task RemoveAsync()
+    private async Task RemoveAsync(CoreWebView2BrowserExtension extension)
     {
-        if (_extensions.SelectedItem is not ExtensionEntry entry) return;
-
         var answer = MessageBox.Show(
             this,
-            $"Remover {entry.Extension.Name} deste perfil?",
-            "Extensões",
+            $"Remover “{extension.Name}” deste perfil?",
+            "Remover extensão",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question);
 
@@ -199,7 +388,7 @@ internal sealed class ExtensionsForm : Form
 
         try
         {
-            await entry.Extension.RemoveAsync();
+            await extension.RemoveAsync();
             await RefreshExtensionsAsync();
         }
         catch (Exception exception)
@@ -208,25 +397,9 @@ internal sealed class ExtensionsForm : Form
         }
     }
 
-    private void UpdateToggleCaption()
-    {
-        if (_extensions.SelectedItem is ExtensionEntry entry)
-        {
-            _toggleButton.Text = entry.Extension.IsEnabled ? "Desativar" : "Ativar";
-        }
-    }
-
     private void ShowError(string message, Exception exception)
     {
         MessageBox.Show(this, $"{message}\n\n{exception.Message}", "Extensões",
             MessageBoxButtons.OK, MessageBoxIcon.Error);
-    }
-
-    private sealed class ExtensionEntry(CoreWebView2BrowserExtension extension)
-    {
-        public CoreWebView2BrowserExtension Extension { get; } = extension;
-
-        public override string ToString() =>
-            $"{Extension.Name} — {(Extension.IsEnabled ? "ativada" : "desativada")}  ({Extension.Id})";
     }
 }
