@@ -84,3 +84,40 @@ jobs:
             }
 
           Write-Host "Versão conferida: $version"
+
+  cefsharp-poc:
+    name: Compilar PoC CEF/CefSharp
+    if: github.event_name == 'pull_request' && github.head_ref == 'codex/cefsharp-extensions-poc'
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restaurar CefSharp para Windows x64
+        run: dotnet restore experiments/CefSharpExtensionsPoc/CefSharpExtensionsPoc.csproj --runtime win-x64
+
+      - name: Publicar pacote de teste
+        run: dotnet publish experiments/CefSharpExtensionsPoc/CefSharpExtensionsPoc.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore --output artifacts/CefSharpPoc/win-x64
+
+      - name: Compactar e medir o pacote
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "artifacts/CefSharpPoc/win-x64/*" -DestinationPath "artifacts/CefSharpPoc-win-x64.zip" -CompressionLevel Optimal
+          $bytes = (Get-ChildItem "artifacts/CefSharpPoc/win-x64" -File -Recurse | Measure-Object -Property Length -Sum).Sum
+          $zipBytes = (Get-Item "artifacts/CefSharpPoc-win-x64.zip").Length
+          "Pasta publicada: $([math]::Round($bytes / 1MB, 1)) MB" >> $env:GITHUB_STEP_SUMMARY
+          "ZIP de teste: $([math]::Round($zipBytes / 1MB, 1)) MB" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Disponibilizar ZIP para teste manual
+        uses: actions/upload-artifact@v4
+        with:
+          name: CefSharp-PoC-win-x64
+          path: artifacts/CefSharpPoc-win-x64.zip
+          retention-days: 7
